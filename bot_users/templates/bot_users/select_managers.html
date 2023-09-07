@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Выберите менеджеров</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            text-align: center;
+        }
+        form {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: white;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+        select {
+            width: 100%;
+            padding: 10px;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>Выберите менеджеров</h1>
+    <form method="post">
+        {% csrf_token %}
+        <select name="managers" multiple>
+            {% for manager in managers %}
+                <option value="{{ manager.id }}">{{ manager.username }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" name="action" value="get_results">Получить результаты</button>
+        <button type="submit" name="action" value="download_excel">Скачать результаты в Excel</button>
+    </form>
+</body>
+</html>

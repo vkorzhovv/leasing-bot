@@ -1,0 +1,249 @@
+from rest_framework.generics import CreateAPIView, ListAPIView
+from .models import BotUser, BotUserGroup, ExtendedUser
+from .serializers import BotUserSerializer, ActivateUserSerializer, ManagerRegistrationSerializer, BotUserExistsSerializer
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from products.models import Product
+import openpyxl
+from openpyxl import Workbook
+from openpyxl.utils import get_column_letter
+from openpyxl.styles import Alignment
+from django.http import HttpResponse
+from openpyxl.styles import Font
+import xlsxwriter
+from django.http import HttpResponse
+from rest_framework import generics
+from .models import BotUser
+from .serializers import BotUserCitySerializer, BotUserSearchSerializer
+
+
+from .models import User  # Импортируйте вашу модель User
+from .services import (
+    get_approved_posts_of_manager,
+    get_not_approved_posts_of_manager,
+    get_approved_polls_of_manager,
+    get_not_approved_polls_of_manager,
+    get_approved_news_of_manager,
+    get_not_approved_news_of_manager,
+    get_approved_stories_of_manager,
+    get_not_approved_stories_of_manager,
+    get_chat_requests_of_manager
+)
+from src.permissions import IsStaffAndSuperuser
+
+
+class BotUserCreateView(CreateAPIView):
+    permission_classes = [IsStaffAndSuperuser]
+    queryset = BotUser.objects.all()
+    serializer_class = BotUserSerializer
+
+
+class ActivateUserView(APIView):
+    permission_classes = [IsStaffAndSuperuser]
+    def put(self, request, user_id):
+        try:
+            user = BotUser.objects.get(user_id=user_id)
+        except BotUser.DoesNotExist:
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = ActivateUserSerializer(user, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"success": "User activated successfully"}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+@api_view(['POST'])
+def update_last_interaction(request):
+    permission_classes = [IsStaffAndSuperuser]
+    user_id = request.data.get('user_id')
+    if not user_id:
+        return Response({'error': 'user_id is required in the request body.'}, status=400)
+
+    user = get_object_or_404(BotUser, user_id=user_id)
+    user.last_interaction = timezone.now()
+    user.save()
+    return Response({'message': 'Last interaction updated successfully.'})
+
+
+class ManagerView(APIView):
+    permission_classes = [IsStaffAndSuperuser]
+    def get(self, request):
+        message = "This endpoint is for user registration. Send a POST request with 'username', 'password', and 'bot_user_id' to register."
+        return Response({'message': message})
+
+    def post(self, request):
+        serializer = ManagerRegistrationSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# class BotUserListView(ListAPIView):
+#     queryset = BotUser.objects.all()
+#     serializer_class = BotUserSerializer
+
+class BotUserListView(ListAPIView):
+    permission_classes = [IsStaffAndSuperuser]
+    serializer_class = BotUserSerializer
+
+    def get_queryset(self):
+        group_id = self.request.GET.get('group_id')
+
+        if group_id:
+            try:
+                group = BotUserGroup.objects.get(id=group_id)
+                return group.members.all()
+            except BotUserGroup.DoesNotExist:
+                return BotUser.objects.none()
+        else:
+            return BotUser.objects.all()
+
+
+
+
+@login_required  # Декоратор, чтобы обеспечить доступ только для авторизованных пользователей
+def manager_results(request):
+    permission_classes = [IsStaffAndSuperuser]
+    action = request.POST.get('action')
+    if action == 'get_results':
+        if request.method == 'POST':
+            selected_managers = request.POST.getlist('managers')  # Получаем выбранных менеджеров
+            results = {}
+
+            for manager_id in selected_managers:
+                manager = User.objects.get(pk=manager_id)
+                results[manager.username] = {
+                    'approved_posts': get_approved_posts_of_manager(manager),
+                    'not_approved_posts': get_not_approved_posts_of_manager(manager),
+                    'approved_polls': get_approved_polls_of_manager(manager),
+                    'not_approved_polls': get_not_approved_polls_of_manager(manager),
+                    'approved_news': get_approved_news_of_manager(manager),
+                    'not_approved_news': get_not_approved_news_of_manager(manager),
+                    'approved_stories': get_approved_stories_of_manager(manager),
+                    'not_approved_stories': get_not_approved_stories_of_manager(manager),
+                    'requests_for_chat': get_chat_requests_of_manager(manager.username)
+                }
+
+            return render(request, 'bot_users/manager_results.html', {'results': results})
+
+    elif action == 'download_excel':
+        selected_managers = request.POST.getlist('managers')
+        results = []
+
+        for manager_id in selected_managers:
+            manager = User.objects.get(pk=manager_id)
+            manager_data = {
+                'username': manager.username,
+                'approved_posts': get_approved_posts_of_manager(manager),
+                'not_approved_posts': get_not_approved_posts_of_manager(manager),
+                'approved_polls': get_approved_polls_of_manager(manager),
+                'not_approved_polls': get_not_approved_polls_of_manager(manager),
+                'approved_news': get_approved_news_of_manager(manager),
+                'not_approved_news': get_not_approved_news_of_manager(manager),
+                'approved_stories': get_approved_stories_of_manager(manager),
+                'not_approved_stories': get_not_approved_stories_of_manager(manager),
+                'requests_for_chat': get_chat_requests_of_manager(manager.username)
+            }
+            results.append(manager_data)
+
+        # Create a new Excel workbook and add a worksheet
+        output = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        output['Content-Disposition'] = 'attachment; filename="manager_results.xlsx"'
+        workbook = xlsxwriter.Workbook(output, {'in_memory': True})
+        worksheet = workbook.add_worksheet()
+
+        # Add headers
+        headers = list(results[0].keys())
+        for col_num, header in enumerate(headers):
+            worksheet.write(0, col_num, header)
+
+        # Add data
+        for row_num, data in enumerate(results, start=1):
+            for col_num, value in enumerate(data.values()):
+                worksheet.write(row_num, col_num, value)
+
+        # Close the Excel workbook
+        workbook.close()
+
+        return output
+
+
+    managers = User.objects.filter(is_staff=True)
+    return render(request, 'bot_users/select_managers.html', {'managers': managers})
+
+
+
+class CheckBotUserExistsView(APIView):
+    def post(self, request, *args, **kwargs):
+        user_id = request.data.get('user_id')
+        if user_id is None:
+            return Response({'error': 'Missing user_id'}, status=status.HTTP_400_BAD_REQUEST)
+
+        bot_user_exists = BotUser.objects.filter(user_id=user_id).exists()
+        serializer = BotUserExistsSerializer(bot_user_exists)
+        return Response(serializer.data)
+
+
+class CheckBotUserActivatedView(APIView):
+    def post(self, request, *args, **kwargs):
+        user_id = request.data.get('user_id')
+        if user_id is None:
+            return Response({'error': 'Missing user_id'}, status=status.HTTP_400_BAD_REQUEST)
+
+        bot_user_exists = BotUser.objects.filter(user_id=user_id, activated=True).exists()
+        serializer = BotUserExistsSerializer(bot_user_exists)
+        return Response(serializer.data)
+
+
+class UsersWithCategoryAPIView(APIView):
+    def get(self, request, product_id):
+        try:
+            # Находим продукт по product_id
+            product = Product.objects.get(id=product_id)
+
+            # Получаем категорию продукта
+            product_category = product.category
+
+            # Находим связанных пользователей через ExtendedUser с этой категорией
+            users_with_category = ExtendedUser.objects.filter(category=product_category)
+
+            # Сериализуем пользователей (при необходимости)
+            serialized_users = [{'username': user.user.username, 'category': product_category.name, 'telegram_username': user.bot_user.username} for user in users_with_category]
+
+            return Response(serialized_users, status=status.HTTP_200_OK)
+
+        except Product.DoesNotExist:
+            return Response({'error': 'Продукт не найден.'}, status=status.HTTP_404_NOT_FOUND)
+
+
+
+class BotUserCityUpdateView(generics.UpdateAPIView):
+    permission_classes = [IsStaffAndSuperuser]
+    queryset = BotUser.objects.all()
+    serializer_class = BotUserCitySerializer
+
+    def get_object(self):
+        user_id = self.kwargs['user_id']
+        return BotUser.objects.get(user_id=user_id)
+
+
+
+class BotUserSearchView(APIView):
+    def get(self, request, username, format=None):
+        try:
+            bot_user = BotUser.objects.get(username=username)
+        except BotUser.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        serializer = BotUserSearchSerializer(bot_user)
+        return Response(serializer.data)

@@ -1,0 +1,7 @@
+/venv/
+.venv/
+*.log
+/__pycache__/
+*.pyc
+*.cpython-311.pyc
+.env

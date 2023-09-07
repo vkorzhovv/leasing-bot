@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Статистика по менеджерам</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            text-align: center;
+        }
+        table {
+            margin: 20px auto;
+            border-collapse: collapse;
+            width: 80%;
+            max-width: 800px;
+            background-color: white;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        tr:hover {
+            background-color: #e0e0e0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Статистика по менеджерам</h1>
+    <table>
+        <tr>
+            <th>Менеджер</th>
+            <th>Подтверждённые посты</th>
+            <th>Неподтверждённые посты</th>
+            <th>Подтверждённые опросы</th>
+            <th>Неподтверждённые опросы</th>
+            <th>Подтверждённые Новости</th>
+            <th>Неподтверждённые Новости</th>
+            <th>Подтверждённое Актуальное</th>
+            <th>Неподтверждённые Актуальное</th>
+            <th>Запросы на чат от пользователей</th>
+        </tr>
+        {% for username, result in results.items %}
+            <tr>
+                <td>{{ username }}</td>
+                <td>{{ result.approved_posts }}</td>
+                <td>{{ result.not_approved_posts }}</td>
+                <td>{{ result.approved_polls }}</td>
+                <td>{{ result.not_approved_polls }}</td>
+                <td>{{ result.approved_news }}</td>
+                <td>{{ result.not_approved_news }}</td>
+                <td>{{ result.approved_stories }}</td>
+                <td>{{ result.not_approved_stories }}</td>
+                <td>{{ result.requests_for_chat }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>
