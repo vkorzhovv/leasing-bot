@@ -376,7 +376,7 @@ async def load_phone(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['phone'] = user_telephone_num
         # отправляем созданную заявку указанному телеграм-юзеру
-        await bot.send_message(chat_id=int(admin_id), text=f"Имя: {data['name']}, Компания: {data['company_name']}\nГеопозиция: {data['location']}\nТелефон: {data['phone']}", reply_markup=activate_user_kb())
+        await bot.send_message(chat_id=int(admin_id), text=f"ID: {message.from_user.id}\nИмя: {data['name']}, Компания: {data['company_name']}\nГеопозиция: {data['location']}\nТелефон: {data['phone']}", reply_markup=activate_user_kb())
 
         await message.answer(f"Отправлено администратору:\n{data['name']}, {data['company_name']}\nГеопозиция: {data['location']}\n{data['phone']}", reply_markup=ReplyKeyboardRemove())
 
@@ -389,16 +389,15 @@ async def load_phone(message: types.Message, state: FSMContext):
 @dp.callback_query_handler(lambda query: query.data == 'no', state="*")
 async def activate_user_handler(callback_query: CallbackQuery, state: FSMContext):
     # Получаем текущий индекс элемента списка из FSM
-    user = callback_query.message['chat']['id']
+    user = str(callback_query.message.text.split('\n')[0].split(': ')[1])
     MESSAGES = await get_commands_list()
     async with state.proxy() as data:
-        name = data['name']
-        company_name = data['company_name']
+        # name = data['name']
+        # company_name = data['company_name']
         if callback_query.data == 'yes':
             await state.finish()
             logging.info(f"Телеграм-пользователь {callback_query.from_user.username} был успешно зарегистрирован")
-            user = callback_query.message['chat']['id']
-            await activate_user(user_id=user, name=name, company_name=company_name)
+            await activate_user(user_id=user)
             if 'registration_approval' in MESSAGES:
                 await bot.send_message(user, MESSAGES['registration_approval'][0][3:-4].replace('<br />', ''), reply_markup=get_categories_kb())
                 await bot.send_message(admin_id, 'Успешно подтверждено!')

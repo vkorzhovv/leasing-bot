@@ -12,7 +12,7 @@ class BotUserSerializer(serializers.ModelSerializer):
 class ActivateUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = BotUser
-        fields = ['name', 'company_name', 'activated']
+        fields = ['activated']
 
 
 

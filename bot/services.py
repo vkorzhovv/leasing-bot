@@ -50,7 +50,6 @@ async def get_commands_list():
                     merged_dict = {key: value for item in response_data for key, value in item.items()}
                     return merged_dict
                 else:
-                    print(response_data)  # Вывести данные ответа для отладки
                     return None
             except: # Вывести информацию об исключении для отладки
                 return None
@@ -184,10 +183,10 @@ async def get_products_list(category_id):
                 return None
 
 
-async def activate_user(user_id, name, company_name):
+async def activate_user(user_id):
     url = f"{domen}api/activate/{user_id}/"
     headers = {'Content-Type': 'application/json'}
-    data = {'name': name, 'company_name': company_name, 'activated': True}
+    data = {'activated': True}
 
     auth = aiohttp.BasicAuth(admin_username, admin_password)
 
