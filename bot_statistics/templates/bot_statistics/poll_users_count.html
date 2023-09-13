@@ -38,43 +38,48 @@
 </head>
 <body>
     <form method="get" action="">
-        <label for="selected_month">Выберите месяц:</label>
-        <select id="selected_month" name="month">
-            <option value="1" {% if selected_month == "1" %}selected{% endif %}>Январь</option>
-            <option value="2" {% if selected_month == "2" %}selected{% endif %}>Февраль</option>
-            <option value="3" {% if selected_month == "3" %}selected{% endif %}>Март</option>
-            <option value="4" {% if selected_month == "4" %}selected{% endif %}>Апрель</option>
-            <option value="5" {% if selected_month == "5" %}selected{% endif %}>Май</option>
-            <option value="6" {% if selected_month == "6" %}selected{% endif %}>Июнь</option>
-            <option value="7" {% if selected_month == "7" %}selected{% endif %}>Июль</option>
-            <option value="8" {% if selected_month == "8" %}selected{% endif %}>Август</option>
-            <option value="9" {% if selected_month == "9" %}selected{% endif %}>Сентябрь</option>
-            <option value="10" {% if selected_month == "10" %}selected{% endif %}>Октябрь</option>
-            <option value="11" {% if selected_month == "11" %}selected{% endif %}>Ноябрь</option>
-            <option value="12" {% if selected_month == "12" %}selected{% endif %}>Декабрь</option>
-        </select>
+        <div class="form-group">
+            <label for="start_date" class="mr-2">Начальная дата:</label>
+            <input type="date" id="start_date" name="start_date" required class="form-control">
+        </div>
+
+        <div class="form-group">
+            <label for="end_date" class="mr-2">Конечная дата:</label>
+            <input type="date" id="end_date" name="end_date" required class="form-control">
+        </div>
+
         <button type="submit">Показать статистику</button>
     </form>
 
+
+
     <p></p>
 
+
     <form method="get" action="{% url 'download_excel' %}">
-        <label for="selected_month">Выберите месяц:</label>
-        <select id="selected_month" name="month">
-            <option value="1" {% if selected_month == "1" %}selected{% endif %}>Январь</option>
-            <option value="2" {% if selected_month == "2" %}selected{% endif %}>Февраль</option>
-            <option value="3" {% if selected_month == "3" %}selected{% endif %}>Март</option>
-            <option value="4" {% if selected_month == "4" %}selected{% endif %}>Апрель</option>
-            <option value="5" {% if selected_month == "5" %}selected{% endif %}>Май</option>
-            <option value="6" {% if selected_month == "6" %}selected{% endif %}>Июнь</option>
-            <option value="7" {% if selected_month == "7" %}selected{% endif %}>Июль</option>
-            <option value="8" {% if selected_month == "8" %}selected{% endif %}>Август</option>
-            <option value="9" {% if selected_month == "9" %}selected{% endif %}>Сентябрь</option>
-            <option value="10" {% if selected_month == "10" %}selected{% endif %}>Октябрь</option>
-            <option value="11" {% if selected_month == "11" %}selected{% endif %}>Ноябрь</option>
-            <option value="12" {% if selected_month == "12" %}selected{% endif %}>Декабрь</option>
-        </select>
+        <div class="form-group">
+            <label for="start_date" class="mr-2">Начальная дата:</label>
+            <input type="date" id="start_date" name="start_date" required class="form-control">
+        </div>
+
+        <div class="form-group">
+            <label for="end_date" class="mr-2">Конечная дата:</label>
+            <input type="date" id="end_date" name="end_date" required class="form-control">
+        </div>
+
         <button type="submit">Скачать статистику</button>
+    </form>
+
+    <br />
+    <br />
+    <form action="/api/statistics/" method="get">
+        <button type="submit">Общая статистика</button>
+    </form>
+    <form action="/api/manager_results/" method="get">
+        <button type="submit">Статистика по менеджерам</button>
+    </form>
+    <form action="/admin/" method="get">
+        <button type="submit">Админ-панель</button>
     </form>
 
     <h1>Пользовательский охват опроса</h1>
@@ -114,28 +119,33 @@
         </tr>
         {% for entry in storynews_entries %}
             <tr>
-                <td>{{ entry.item.name }}</td>
-                <td>{{ entry.item.sort }}</td>
-                <td>{{ entry.views }}</td>
+                <td>{{ entry.0.name }}</td>
+                <td>{{ entry.0.item.sort }}</td>
+                <td>{{ entry.1 }}</td>
             </tr>
         {% endfor %}
     </table>
 
-    <h1>Просмотры товаров</h1>
+    {% comment %} <h1>Просмотры товаров</h1>
     <table>
         <tr>
             <th>Товар</th>
             <th>Категория</th>
             <th>Сколько просмотров</th>
+            <th>Сколько запросов на КП</th>
+            <th>Сколько запросов чата менеджера</th>
         </tr>
-        {% for entry in products_entries %}
+        {% for entry in product_entries %}
             <tr>
-                <td>{{ entry.product.name }}</td>
-                <td>{{ entry.product.category }}</td>
-                <td>{{ entry.views }}</td>
+                <td>{{ entry.0.name }}</td>
+                <td>{{ entry.0.category }}</td>
+                <td>{{ entry.1 }}</td>
+                <td>{{ entry.2 }}</td>
+                <td>{{ entry.3 }}</td>
             </tr>
         {% endfor %}
-    </table>
+
+    </table> {% endcomment %}
 
     <h1>Просмотры категорий</h1>
     <table>
@@ -145,11 +155,27 @@
         </tr>
         {% for entry in categories_entries %}
             <tr>
-                <td>{{ entry.category.get_level2.0|join:" > "|default:"" }}>{{ entry.category.name }}</td>
-                <td>{{ entry.views }}</td>
+                <td>
+                    <a href="{% url 'category_products' entry.0.id start_date_str end_date_str %}">
+                        {{ entry.0 }}
+                    </a>
+                </td>
+                <td>{{ entry.1 }}</td>
             </tr>
         {% endfor %}
     </table>
+
+    <h1>Регистрации</h1>
+    <table>
+        <tr>
+            <th>Количество</th>
+        </tr>
+        <tr>
+            <td>{{ users_entries }}</td>
+        </tr>
+    </table>
+
+
 
 </body>
 </html>

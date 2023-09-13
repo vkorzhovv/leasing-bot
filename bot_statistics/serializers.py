@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import PollUsersCount, PostUsersCount, StoryNewsViews, ProductViews, CategoryViews, ManagerChatRequest
+from .models import PollUsersCount, PostUsersCount, StoryNewsViews, ProductViews, CategoryViews, ManagerChatRequest, KpRequest, ProductKp, ProductChat
 
 class PollUsersCountSerializer(serializers.ModelSerializer):
     class Meta:
@@ -24,6 +24,16 @@ class ProductViewsSerializer(serializers.ModelSerializer):
         model = ProductViews
         fields = '__all__'
 
+class ProductKpSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductKp
+        fields = '__all__'
+
+class ProductChatSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductChat
+        fields = '__all__'
+
 
 class CategoryViewsSerializer(serializers.ModelSerializer):
     class Meta:
@@ -34,4 +44,10 @@ class CategoryViewsSerializer(serializers.ModelSerializer):
 class ManagerChatRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = ManagerChatRequest
+        fields = '__all__'
+
+
+class KpRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = KpRequest
         fields = '__all__'

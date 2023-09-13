@@ -19,11 +19,13 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.shortcuts import redirect
-
+from django.contrib.auth import views as auth_views
+from bot_users.views import dashboard_view
 
 urlpatterns = [
-    path('', lambda request: redirect('admin/', permanent=False)),
+    path('', dashboard_view),
     path("admin/", admin.site.urls),
+    path('accounts/login/', auth_views.LoginView.as_view(), name='login'),
     path("api/", include("bot_users.urls")),
     path("api/", include("commands.urls")),
     path("api/", include("categories.urls")),

@@ -4,7 +4,10 @@ import requests
 from urllib.parse import urlencode
 from django.core.files import File
 import io
-
+from django.conf import settings
+import os
+from django.utils.safestring import mark_safe
+from urllib.parse import urlparse, unquote
 
 class Equipment(models.Model):
     name = models.CharField(max_length=64, verbose_name='Название')
@@ -32,11 +35,11 @@ class Product(models.Model):
         ('CNY', 'cny'),
     )
 
-    SPECIES_CHOICES = (
-        ('truck', 'Грузовик'),
-        ('pickup', 'Пикап'),
-        ('dump', 'Самосвал'),
-    )
+    # SPECIES_CHOICES = (
+    #     ('truck', 'Грузовик'),
+    #     ('pickup', 'Пикап'),
+    #     ('dump', 'Самосвал'),
+    # )
 
     brand = models.CharField(max_length=128, null=True, blank=True, verbose_name='Марка')
     category = models.ForeignKey(Category, on_delete=models.CASCADE, null=True, blank=True, related_name = 'products', verbose_name='Категория')
@@ -47,6 +50,8 @@ class Product(models.Model):
     photo = models.ImageField(upload_to='images', blank=True, verbose_name='Фотография')
     photo_url = models.CharField(max_length=128, null=True, blank=True, verbose_name='Адрес для яндекс-картинки')
     description = models.TextField(null=True, blank=True, verbose_name='Описание')
+    kp = models.FileField('КП', upload_to='kp/', blank=True, null=True)
+    kp_url = models.CharField(max_length=128, null=True, blank=True, verbose_name='Адрес для яндекс-файла')
     year = models.PositiveIntegerField(null=True, blank=True, verbose_name='Год выпуска')
     promotion = models.BooleanField(default=False, verbose_name='Акция')
     manufacturer = models.CharField(max_length=128, null=True, blank=True, verbose_name='Страна производителя')
@@ -56,7 +61,8 @@ class Product(models.Model):
     updated_at = models.DateTimeField(auto_now=True, verbose_name='Обновлено')
     hide = models.BooleanField(default=False, verbose_name='Скрыть')
     currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES, blank=True, null=True, default='RUB', verbose_name='Валюта')
-    species = models.CharField(max_length=20, choices=SPECIES_CHOICES, blank=True, null=True, verbose_name='Вид техники')
+    # species = models.CharField(max_length=20, choices=SPECIES_CHOICES, blank=True, null=True, verbose_name='Вид техники')
+    species = models.CharField(max_length=64, blank=True, null=True, verbose_name='Вид техники')
     wheels = models.CharField(max_length=64, blank=True, null=True, verbose_name='Колёсная формула')
     promotion_description = models.TextField(null=True, blank=True, verbose_name='Описание акции')
     position = models.PositiveIntegerField(null=True, blank=True, verbose_name='Номер позиции в категории')
@@ -70,16 +76,33 @@ class Product(models.Model):
             final_url = base_url + urlencode(dict(public_key=public_key))
             response = requests.get(final_url)
             download_url = response.json()['href']
+            parsed_url = urlparse(download_url)
+            filename = unquote(parsed_url.query.split("&filename=")[1].split("&")[0])
 
             download_response = requests.get(download_url)
             file_content = download_response.content
 
-            file_name = self.photo_url.split('/')[-1]
-            temp_file = File(io.BytesIO(file_content), name=file_name+'.jpg')
+
+            temp_file = File(io.BytesIO(file_content), name=filename)
             self.photo = temp_file
 
-        super().save(*args, **kwargs)
 
+        if self.kp_url:
+            base_url = 'https://cloud-api.yandex.net/v1/disk/public/resources/download?'
+            public_key = self.kp_url
+
+            final_url = base_url + urlencode(dict(public_key=public_key))
+            response = requests.get(final_url)
+            download_url = response.json()['href']
+            parsed_url = urlparse(download_url)
+            filename = unquote(parsed_url.query.split("&filename=")[1].split("&")[0])
+            download_response = requests.get(download_url)
+            file_content = download_response.content
+
+            temp_file = File(io.BytesIO(file_content), name=filename)
+            self.kp = temp_file
+
+        super().save(*args, **kwargs)
 
 
     def __str__(self):
@@ -90,3 +113,33 @@ class Product(models.Model):
     class Meta:
         verbose_name = 'Товар'
         verbose_name_plural = 'Товары'
+
+
+
+class ProductMedia(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='mediafiles', verbose_name='Товар')
+    media = models.FileField(upload_to='product_media/', blank=True, verbose_name='Доп. фотки')
+    absolute_media_path = models.CharField(max_length=255, blank=True, verbose_name='Абсолютный путь до медиа')
+
+    def save(self, *args, **kwargs):
+        self.absolute_media_path = self.get_absolute_media_path()
+        return super().save(*args, **kwargs)
+
+    def get_absolute_media_path(self):
+        media_filename = os.path.basename(self.media.path)
+        return os.path.join(settings.BASE_DIR, 'media', 'product_media', media_filename)
+
+
+    def image_preview(self):
+        if self.media:
+            return mark_safe('<img src="%s" width="170" height="150" />' % self.media.url)
+        else:
+            return 'Нет фотки'
+
+
+    class Meta:
+        verbose_name = 'Дополнительные фото'
+        verbose_name_plural = 'Дополнительные фото'
+
+    def __str__(self):
+        return f"Объект ({self.id})"

@@ -9,7 +9,6 @@ load_dotenv()
 
 storage = MemoryStorage()
 TOKEN=os.getenv('TOKEN')
-# TOKEN='5930961390:AAFe66uMiuwJvvBrPghTnj2ULccFuST8Xrg'
 admin_id = os.getenv('admin_id')
 domen = os.getenv('domen')
 bot = Bot(TOKEN)

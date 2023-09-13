@@ -5,10 +5,14 @@ from django.db import models
 from import_export.admin import ExportActionModelAdmin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
+from import_export.formats.base_formats import DEFAULT_FORMATS
+from products.formats import XML
+
 
 
 @admin.register(BotUser)
 class BotUserAdmin(ExportActionModelAdmin):
+    formats = DEFAULT_FORMATS + [XML]
     list_display = ('user_id', 'name', 'city', 'company_name', 'phone', 'activated', 'created_at', 'last_interaction', 'display_groups')
     list_filter = ('phone', 'activated')
     search_fields = ('name', 'company_name', 'phone')

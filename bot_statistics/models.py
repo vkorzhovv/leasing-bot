@@ -19,23 +19,42 @@ class PostUsersCount(models.Model):
 
 
 class StoryNewsViews(models.Model):
-    item = models.ForeignKey(StoryNews, on_delete=models.CASCADE)
+    item = models.ForeignKey(StoryNews, on_delete=models.CASCADE, related_name='views')
     views = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 
 
 class ProductViews(models.Model):
-    product = models.OneToOneField(Product, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='views')
     views = models.PositiveIntegerField(default=0)
+    kp = models.PositiveIntegerField(default=0)
+    manager_chat = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class ProductKp(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='kps')
+    kp = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class ProductChat(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='chats')
+    manager_chat = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 
 
 class CategoryViews(models.Model):
-    category = models.OneToOneField(Category, on_delete=models.CASCADE)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='views')
     views = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 
 class ManagerChatRequest(models.Model):
+    product = models.TextField()
+    manager = models.CharField(max_length=32)
+    bot_user = models.CharField(max_length=32)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class KpRequest(models.Model):
     product = models.TextField()
     manager = models.CharField(max_length=32)
     bot_user = models.CharField(max_length=32)

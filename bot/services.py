@@ -57,7 +57,8 @@ async def get_commands_list():
 
 # Отправка фотографии с текстом во время регистрации
 async def send_photo_with_url(TOKEN, CHAT_ID, img_url, caption, parse_mode = 'HTML', message=None):
-    caption = caption[3:-4]
+    if '<p>' in caption:
+        caption = caption[3:-4]
     if img_url!=None:
         url = f"https://api.telegram.org/bot{TOKEN}/sendPhoto"
 
@@ -334,13 +335,11 @@ async def do_mailing(post):
             None
 
 
-async def schedule_mailing(message, time=None):
-    # Заданное время
-    print(time)
-    if time:
-        dt_object = parse(time)
-        dt_utc = dt_object.astimezone(datetime.timezone.utc)
-        t = dt_utc
+async def schedule_mailing(message, time):
+
+    dt_object = parse(time)
+    dt_utc = dt_object.astimezone(datetime.timezone.utc)
+    t = dt_utc
 
     # Текущее время, осведомленное о смещении
     now = datetime.datetime.now(datetime.timezone.utc)
@@ -449,12 +448,11 @@ async def do_poll_mailing(poll):
             None
 
 
-async def schedule_poll_mailing(message, time=None):
-    # Заданное время
-    if time:
-        dt_object = parse(time)
-        dt_utc = dt_object.astimezone(datetime.timezone.utc)
-        t = dt_utc
+async def schedule_poll_mailing(message, time):
+
+    dt_object = parse(time)
+    dt_utc = dt_object.astimezone(datetime.timezone.utc)
+    t = dt_utc
 
     # Текущее время, осведомленное о смещении
     now = datetime.datetime.now(datetime.timezone.utc)
@@ -668,6 +666,31 @@ async def create_product_views(product_id):
             response_data = await response.json()
             return response_data
 
+async def create_product_kp(product_id):
+    url = f"{domen}api/create_product_kp/"
+
+    data = {
+        "product": product_id
+    }
+
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url, data=data) as response:
+            response_data = await response.json()
+            return response_data
+
+
+async def create_product_chat(product_id):
+    url = f"{domen}api/create_product_chat/"
+
+    data = {
+        "product": product_id
+    }
+
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url, data=data) as response:
+            response_data = await response.json()
+            return response_data
+
 
 
 async def increment_category_views(category_id):
@@ -774,10 +797,83 @@ async def search_manager_id(manager_username):
                 return result
 
 
-# async def some_async_function():
-#     # Ваш код, где вы хотите вызвать функцию get_categories_list()
-#     a = await search_manager_id("dbte5_py")
-#     print(a)
+async def get_product_media(product_id):
+    url = f'{domen}api/product_media/{product_id}/'  # Замените на реальный URL
 
-# if __name__ == "__main__":
-#     asyncio.run(some_async_function())
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            if response.status == 200:
+                data = await response.json()
+                return [i['absolute_media_path'] for i in data]
+            else:
+                print(f'Error fetching data. Status code: {response.status}')
+                return None
+
+
+async def get_kp_path(product_id):
+    url = f'{domen}api/get_kp_path/{product_id}/'  # Замените на свой URL
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            if response.status == 200:
+                data = await response.json()
+                kp_path = data.get('kp_path')
+                return kp_path
+            else:
+                return None
+
+
+async def create_kp_request(product, manager, bot_user):
+    url = f"{domen}api/create_kp_request/"  # Замените на фактический URL
+    data = {
+        "product": product,
+        "manager": manager,
+        "bot_user": bot_user
+    }
+
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url, json=data) as response:
+            if response.status == 201:  # Ожидаемый статус создания объекта
+                result = await response.json()
+                print("Manager request created:", result)
+            else:
+                print("Error creating manager request:", response.status)
+
+
+async def increment_product_kp(product_id):
+    url = f"{domen}api/increment_products_kp/"  # Замените на ваш реальный URL
+
+    data = {
+        "product_id": product_id
+    }
+
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url, data=data) as response:
+            if response.status == 200:
+                response_data = await response.json()
+                return response_data
+            else:
+                return None
+
+async def increment_product_manager_chat(product_id):
+    url = f"{domen}api/increment_products_manager_chat/"  # Замените на ваш реальный URL
+
+    data = {
+        "product_id": product_id
+    }
+
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url, data=data) as response:
+            if response.status == 200:
+                response_data = await response.json()
+                return response_data
+            else:
+                return None
+
+async def some_async_function():
+    # Ваш код, где вы хотите вызвать функцию get_categories_list()
+    a = await increment_product_manager_chat("2")
+    print(a)
+
+if __name__ == "__main__":
+    asyncio.run(some_async_function())

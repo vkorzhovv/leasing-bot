@@ -36,6 +36,16 @@
     </style>
 </head>
 <body>
+    <form action="/api/statistics/" method="get">
+        <button type="submit">Общая статистика</button>
+    </form>
+    <form action="/api/manager_results/" method="get">
+        <button type="submit">Статистика по менеджерам</button>
+    </form>
+    <form action="/admin/" method="get">
+        <button type="submit">Админ-панель</button>
+    </form>
+
     <h1>Статистика по менеджерам</h1>
     <table>
         <tr>
@@ -48,7 +58,8 @@
             <th>Неподтверждённые Новости</th>
             <th>Подтверждённое Актуальное</th>
             <th>Неподтверждённые Актуальное</th>
-            <th>Запросы на чат от пользователей</th>
+            <th>Запросы на чат с менеджером от пользователей</th>
+            <th>Запросы на КП от пользователей</th>
         </tr>
         {% for username, result in results.items %}
             <tr>
@@ -62,8 +73,10 @@
                 <td>{{ result.approved_stories }}</td>
                 <td>{{ result.not_approved_stories }}</td>
                 <td>{{ result.requests_for_chat }}</td>
+                <td>{{ result.requests_for_kp }}</td>
             </tr>
         {% endfor %}
     </table>
+
 </body>
 </html>

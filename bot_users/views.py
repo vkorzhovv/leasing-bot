@@ -22,6 +22,11 @@ from django.http import HttpResponse
 from rest_framework import generics
 from .models import BotUser
 from .serializers import BotUserCitySerializer, BotUserSearchSerializer
+from django.utils.timezone import make_aware
+from datetime import datetime
+from datetime import timedelta
+from django.contrib import messages
+from django.shortcuts import render, redirect
 
 
 from .models import User  # Импортируйте вашу модель User
@@ -34,7 +39,8 @@ from .services import (
     get_not_approved_news_of_manager,
     get_approved_stories_of_manager,
     get_not_approved_stories_of_manager,
-    get_chat_requests_of_manager
+    get_chat_requests_of_manager,
+    get_kp_requests_of_manager
 )
 from src.permissions import IsStaffAndSuperuser
 
@@ -109,50 +115,67 @@ class BotUserListView(ListAPIView):
             return BotUser.objects.all()
 
 
-
-
 @login_required  # Декоратор, чтобы обеспечить доступ только для авторизованных пользователей
 def manager_results(request):
     permission_classes = [IsStaffAndSuperuser]
     action = request.POST.get('action')
     if action == 'get_results':
         if request.method == 'POST':
-            selected_managers = request.POST.getlist('managers')  # Получаем выбранных менеджеров
+            selected_managers = request.POST.getlist('managers')
+            if not selected_managers:
+                return HttpResponse("Выберите хотя бы одного менеджера.")
+            start_date = request.POST.get('start_date')
+            end_date = request.POST.get('end_date')
+
+            # Преобразуйте строки с датами в объекты datetime
+            start_date = make_aware(datetime.strptime(start_date, '%Y-%m-%d'))
+            end_date = make_aware(datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1))
+
             results = {}
 
             for manager_id in selected_managers:
                 manager = User.objects.get(pk=manager_id)
                 results[manager.username] = {
-                    'approved_posts': get_approved_posts_of_manager(manager),
-                    'not_approved_posts': get_not_approved_posts_of_manager(manager),
-                    'approved_polls': get_approved_polls_of_manager(manager),
-                    'not_approved_polls': get_not_approved_polls_of_manager(manager),
-                    'approved_news': get_approved_news_of_manager(manager),
-                    'not_approved_news': get_not_approved_news_of_manager(manager),
-                    'approved_stories': get_approved_stories_of_manager(manager),
-                    'not_approved_stories': get_not_approved_stories_of_manager(manager),
-                    'requests_for_chat': get_chat_requests_of_manager(manager.username)
+                    'approved_posts': get_approved_posts_of_manager(manager, start_date, end_date),
+                    'not_approved_posts': get_not_approved_posts_of_manager(manager, start_date, end_date),
+                    'approved_polls': get_approved_polls_of_manager(manager, start_date, end_date),
+                    'not_approved_polls': get_not_approved_polls_of_manager(manager, start_date, end_date),
+                    'approved_news': get_approved_news_of_manager(manager, start_date, end_date),
+                    'not_approved_news': get_not_approved_news_of_manager(manager, start_date, end_date),
+                    'approved_stories': get_approved_stories_of_manager(manager, start_date, end_date),
+                    'not_approved_stories': get_not_approved_stories_of_manager(manager, start_date, end_date),
+                    'requests_for_chat': get_chat_requests_of_manager(manager.username, start_date, end_date),
+                    'requests_for_kp': get_kp_requests_of_manager(manager.username, start_date, end_date),
                 }
 
             return render(request, 'bot_users/manager_results.html', {'results': results})
 
     elif action == 'download_excel':
         selected_managers = request.POST.getlist('managers')
+        if not selected_managers:
+                return HttpResponse("Выберите хотя бы одного менеджера.")
+        start_date = request.POST.get('start_date')
+        end_date = request.POST.get('end_date')
+
+        # Преобразуйте строки с датами в объекты datetime
+        start_date = make_aware(datetime.strptime(start_date, '%Y-%m-%d'))
+        end_date = make_aware(datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1))
         results = []
 
         for manager_id in selected_managers:
             manager = User.objects.get(pk=manager_id)
             manager_data = {
                 'username': manager.username,
-                'approved_posts': get_approved_posts_of_manager(manager),
-                'not_approved_posts': get_not_approved_posts_of_manager(manager),
-                'approved_polls': get_approved_polls_of_manager(manager),
-                'not_approved_polls': get_not_approved_polls_of_manager(manager),
-                'approved_news': get_approved_news_of_manager(manager),
-                'not_approved_news': get_not_approved_news_of_manager(manager),
-                'approved_stories': get_approved_stories_of_manager(manager),
-                'not_approved_stories': get_not_approved_stories_of_manager(manager),
-                'requests_for_chat': get_chat_requests_of_manager(manager.username)
+                'approved_posts': get_approved_posts_of_manager(manager, start_date, end_date),
+                'not_approved_posts': get_not_approved_posts_of_manager(manager, start_date, end_date),
+                'approved_polls': get_approved_polls_of_manager(manager, start_date, end_date),
+                'not_approved_polls': get_not_approved_polls_of_manager(manager, start_date, end_date),
+                'approved_news': get_approved_news_of_manager(manager, start_date, end_date),
+                'not_approved_news': get_not_approved_news_of_manager(manager, start_date, end_date),
+                'approved_stories': get_approved_stories_of_manager(manager, start_date, end_date),
+                'not_approved_stories': get_not_approved_stories_of_manager(manager, start_date, end_date),
+                'requests_for_chat': get_chat_requests_of_manager(manager.username, start_date, end_date),
+                'requests_for_kp': get_kp_requests_of_manager(manager.username, start_date, end_date),
             }
             results.append(manager_data)
 
@@ -247,3 +270,8 @@ class BotUserSearchView(APIView):
 
         serializer = BotUserSearchSerializer(bot_user)
         return Response(serializer.data)
+
+
+@login_required(login_url='/admin/login/')
+def dashboard_view(request):
+    return render(request, 'bot_users/dashboard.html')

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        h1 {
+            text-align: center;
+        }
+        table {
+            margin: 20px auto;
+            border-collapse: collapse;
+            width: 80%;
+            max-width: 800px;
+            background-color: white;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        tr:hover {
+            background-color: #e0e0e0;
+        }
+        form {
+            text-align: center;
+        }
+        button {
+            font-size: 20px; /* Размер кнопки */
+            padding: 10px 20px; /* Поля вокруг текста в кнопке */
+            margin: 10px; /* Отступы вокруг кнопки */
+        }
+    </style>
+</head>
+<body>
+    <form action="/api/statistics/" method="get">
+        <button type="submit">Общая статистика</button>
+    </form>
+    <form action="/api/manager_results/" method="get">
+        <button type="submit">Статистика по менеджерам</button>
+    </form>
+    <form action="/admin/" method="get">
+        <button type="submit">Админ-панель</button>
+    </form>
+</body>
+</html>

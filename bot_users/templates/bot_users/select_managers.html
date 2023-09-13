@@ -40,6 +40,12 @@
     <h1>Выберите менеджеров</h1>
     <form method="post">
         {% csrf_token %}
+        <label for="start_date">Дата начала:</label>
+        <input type="date" id="start_date" name="start_date" required><br><br>
+
+        <label for="end_date">Дата окончания:</label>
+        <input type="date" id="end_date" name="end_date" required><br><br>
+
         <select name="managers" multiple>
             {% for manager in managers %}
                 <option value="{{ manager.id }}">{{ manager.username }}</option>
@@ -48,5 +54,6 @@
         <button type="submit" name="action" value="get_results">Получить результаты</button>
         <button type="submit" name="action" value="download_excel">Скачать результаты в Excel</button>
     </form>
+
 </body>
 </html>
