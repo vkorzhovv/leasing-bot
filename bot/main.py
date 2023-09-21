@@ -137,6 +137,12 @@ def get_product_kb():
     keyboard.row(button5)
     return keyboard
 
+def get_menu_keyboard():
+    keyboard = InlineKeyboardMarkup()
+    button = InlineKeyboardButton('Меню 🎛', callback_data="models")
+    keyboard.row(button)
+    return keyboard
+
 def get_location_keyboard():
     keyboard = types.ReplyKeyboardMarkup()
     button = types.KeyboardButton("Поделиться геопозицией", request_location=True)
@@ -274,7 +280,7 @@ async def command_city(message: types.Message):
 async def cmd_menu(message: types.Message) -> None:
     logging.info(f"Телеграм-пользователь {message.from_user.username} нажал на меню")
     if await check_botuser_activated(str(message.from_user.id)):
-        await bot.send_message(message.from_user.id, "Выберете пункт:", reply_markup = get_categories_kb())
+        await bot.send_message(message.from_user.id, "Выберите пункт:", reply_markup = get_categories_kb())
     else:
         MESSAGES = await get_commands_list()
         if 'already_registered_message' in MESSAGES:
@@ -586,7 +592,7 @@ async def cmd_catalog(message: types.Message, state: FSMContext) -> None:
                     data['item_description'] = item['description']
 
             else:
-                await message.answer(f"Список новостей пуст.")
+                await bot.send_message(message.from_user.id, f"Список новостей пуст.", reply_markup=get_menu_keyboard())
 
         #   Устанавливаем состояние ProductState.current_index для перехода к обработке кнопок навигации
             # await ItemState.current_index.set()
@@ -617,7 +623,7 @@ async def cmd_catalog(message: types.Message, state: FSMContext) -> None:
                     data['item_description'] = item['description']
 
             else:
-                await message.answer(f"Список stories пуст.")
+                await bot.send_message(message.from_user.id, f"Список актуального пуст.", reply_markup=get_menu_keyboard())
 
 
         elif message.text=='Акции':
@@ -651,7 +657,7 @@ async def cmd_catalog(message: types.Message, state: FSMContext) -> None:
                     data['promotion_description'] = promotion['promotion_description']
 
             else:
-                await message.answer(f"Список акций пуст.")
+                await bot.send_message(message.from_user.id, f"Список акций пуст.", reply_markup=get_menu_keyboard())
 
     else:
         MESSAGES = await get_commands_list()
@@ -740,14 +746,19 @@ async def callback_kp_request(callback_query: CallbackQuery):
         with open(path, 'rb') as file:
             await bot.send_document(callback_query.from_user.id, InputFile(file))
     else:
-        await bot.send_message(callback_query.from_user.id, 'КП отсутствует')
+        await bot.send_message(callback_query.from_user.id, 'Менеджер скоро с вами свяжется')
     product_link = f"{domen}admin/products/product/{product_id}/change/"
     await create_kp_request(product=f'{product} {product_link}', bot_user=user, manager=manager_telegram_username)
-    d = await search_manager_id(manager_telegram_username)
-    await bot.send_message(int(d['user_id']), f"{text}\ntelegram-user: {user}")
+    try:
+        d = await search_manager_id(manager_telegram_username)
+        await bot.send_message(int(d['user_id']), f"{text}\ntelegram-user: {user}")
+    except:
+        await bot.send_message(int(admin_id), f"{text}\ntelegram-user: {user}")
+
 
 @dp.callback_query_handler(lambda query: query.data == 'media', state="*")
 async def media_handler(callback_query: CallbackQuery, state: FSMContext):
+    logging.info(f"Телеграм-пользователь {callback_query.from_user.username} нажал на 'Показать ещё'")
     user = callback_query.message['chat']['id']
     product_id = callback_query.message.caption.split('\n')[0].split(': ')[1]
     photo_pathes = await get_product_media(product_id)
@@ -1118,7 +1129,7 @@ async def process_brand(callback_query: CallbackQuery, state: FSMContext):
                     data['product_price'] = product['price']
         else:
 
-            await bot.send_message(callback_query.from_user.id, text="Список продуктов пуст.", reply_markup=get_categories_kb())
+            await bot.send_message(callback_query.from_user.id, text="Список продуктов пуст.")
 
 
 
@@ -1191,7 +1202,7 @@ async def callback_category(callback_query: CallbackQuery, state: FSMContext):
 
         else:
 
-            await bot.send_message(callback_query.from_user.id, text="Список продуктов пуст.", reply_markup=get_categories_kb())
+            await bot.send_message(callback_query.from_user.id, text="Список продуктов пуст.")
 
     # await ProductState.current_index.set()
 

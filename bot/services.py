@@ -5,7 +5,7 @@ import json
 import requests
 from faker import Faker
 from aiogram import Bot,types
-from bot import storage, bot, dp, TOKEN, admin_username, admin_password, domen
+from bot import storage, bot, dp, TOKEN, admin_username, admin_password, domen, admin_tg
 import datetime
 from dateutil.parser import parse
 import datetime
@@ -733,7 +733,7 @@ async def get_manager_with_category(product_id):
                 if data:
                     return data[0]['telegram_username']
                 else:
-                    return "Менеджер не найден"
+                    return admin_tg
             else:
                 return "Error fetching data"
 

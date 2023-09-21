@@ -24,7 +24,8 @@ class PostMediaInline(admin.StackedInline):
 class BotUserAdmin(ImportExportModelAdmin):
 
     def image_tag(self, obj):
-        return mark_safe('<img src="%s" width="85" height="75" />' % obj.photo.url)
+        if obj.photo:
+            return mark_safe('<img src="%s" width="85" height="75" />' % obj.photo.url)
 
     image_tag.short_description = 'Фото-превью'
 

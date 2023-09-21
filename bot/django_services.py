@@ -235,6 +235,6 @@ def approve_storynews_kb():
 async def send_storynews_admin(storynews, manager):
     try:
         photo = storynews.photo.path
-        await bot.send_photo(admin_id, open(photo, 'rb'), caption=f"ID актуального/новости: {storynews.id}\nНовость или актуальное: {storynews.sort}\nНазвание: {storynews.name}\nОписание: {storynews.description}\nТелеграм-ID менеджера: {manager} ({storynews.user.extended_user.user.username})", reply_markup=approve_storynews_kb())
+        await bot.send_photo(admin_id, open(photo, 'rb'), caption=f"ID актуального/новости: {storynews.id}\nНовость или актуальное: {storynews.get_sort_display()}\nНазвание: {storynews.name}\nОписание: {storynews.description}\nТелеграм-ID менеджера: {manager} ({storynews.user.extended_user.user.username})", reply_markup=approve_storynews_kb())
     except:
-        await bot.send_message(admin_id, f"ID актуального/новости: {storynews.id}\nНовость или актуальное: {storynews.sort}\nНазвание: {storynews.name}\nОписание: {storynews.description}\nТелеграм-ID менеджера: {manager} ({storynews.user.extended_user.user.username})", reply_markup=approve_storynews_kb())
+        await bot.send_message(admin_id, f"ID актуального/новости: {storynews.id}\nНовость или актуальное: {storynews.get_sort_display()}\nНазвание: {storynews.name}\nОписание: {storynews.description}\nТелеграм-ID менеджера: {manager} ({storynews.user.extended_user.user.username})", reply_markup=approve_storynews_kb())
