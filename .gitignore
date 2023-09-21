@@ -1,5 +1,6 @@
 /venv/
 .venv/
+media/
 *.log
 /__pycache__/
 *.pyc
