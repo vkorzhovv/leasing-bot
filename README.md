@@ -1,5 +1,5 @@
 # Установка
-**1.** git clone [https://github.com/vkorzhovv/leasing_bot.git](https://github.com/vkorzhovv/leasing_bot.git) <br>
+**1.** git clone [https://github.com/Dbtzhv/leasing_bot.git](https://github.com/Dbtzhv/leasing_bot.git) <br>
 **2.** переходим в склонированную папку в консоли и выполняем команду: python -m venv venv. Потом активируем виртуальное окружение<br>
 **3.** устанавливаем зависимости в виртуальное окружение: pip install -r requirements.txt <br>
 **4.** создаём суперюзера: python manage.py createsuperuser <br>

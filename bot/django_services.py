@@ -67,7 +67,7 @@ async def get_post_path(post_id):
                 return None
 
 
-async def send_post(post, media_paths):
+async def send_post(post, media_paths=None):
 
 
     message = post.split('\n')
@@ -133,7 +133,7 @@ async def get_poll_path(poll_id):
 
 
 
-async def send_poll(poll, media_paths):
+async def send_poll(poll, media_paths=None):
     media = []
 
     user_id = admin_id
@@ -147,6 +147,7 @@ async def send_poll(poll, media_paths):
     manager_id = message[-1]
 
     #media_paths = await get_poll_path(poll_id)
+    poll_options = [types.PollOption(text=i, voter_count=0) for i in options]
 
     if media_paths:
         for photo_path in media_paths:
@@ -161,7 +162,6 @@ async def send_poll(poll, media_paths):
             media.append(input_media)
 
 
-        poll_options = [types.PollOption(text=i, voter_count=0) for i in options]
 
         if correct_option is not None and correct_option.isdigit():
 

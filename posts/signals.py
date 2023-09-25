@@ -50,7 +50,7 @@ def post_edited(sender, instance, **kwargs):
     send_post_sync = async_to_sync(send_post)
     if instance.id is not None:
         previous = Post.objects.get(id=instance.id)
-        if not (previous.approved == instance.approved and previous.approved==True) and previous.total_media_count==instance.total_media_count:
+        if instance.approved!=True and previous.total_media_count==instance.total_media_count:
             media_paths = list(Post.objects.get(pk=instance.id).mediafiles.all().values_list('absolute_media_path', flat=True))
             if instance.group:
                 send_post_sync(f'ID поста: {instance.id}\nТекст поста: {instance.text}\nID группы: {instance.group.id}\nUser ID: {instance.user.extended_user.bot_user.user_id} ({instance.user.extended_user.user.username}|запланировано на {instance.scheduled_time})', media_paths)
@@ -58,3 +58,16 @@ def post_edited(sender, instance, **kwargs):
             else:
                 send_post_sync(f'ID поста: {instance.id}\nТекст поста: {instance.text}\nID группы: None\nТелеграм-ID менеджера: {instance.user.extended_user.bot_user.user_id} ({instance.user.extended_user.user.username}|запланировано на {instance.scheduled_time})', media_paths)
                 logger.info("edit: post without group has been sent to the admin: %s", instance.id)
+
+
+@receiver(post_save, sender=Post)
+def post_without_media_created(sender, created, instance, **kwargs):
+    send_post_sync = async_to_sync(send_post)
+    if created:
+        if instance.total_media_count==0:
+            if instance.group:
+                send_post_sync(f'ID поста: {instance.id}\nТекст поста: {instance.text}\nID группы: {instance.group.id}\nТелеграм-ID менеджера: {instance.user.extended_user.bot_user.user_id} ({instance.user.extended_user.user.username}|запланировано на {instance.scheduled_time})')
+                logger.info("post with group has been sent to the admin: %s", instance.id)
+            else:
+                send_post_sync(f'ID поста: {instance.id}\nТекст поста: {instance.text}\nID группы: None\nТелеграм-ID менеджера: {instance.user.extended_user.bot_user.user_id} ({instance.user.extended_user.user.username}|запланировано на {instance.scheduled_time})')
+                logger.info("post without group has been sent to the admin: %s", instance.id)

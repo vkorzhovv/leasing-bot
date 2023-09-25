@@ -477,7 +477,9 @@ async def send_poll(user_id, message):
 
     media_paths = await get_poll_path(poll_id)
 
-    if media_paths:
+    poll_options = [types.PollOption(text=i, voter_count=0) for i in options]
+
+    if len(media_paths)>0:
         for photo_path in media_paths:
             if photo_path.lower().endswith(('.jpg', '.jpeg', '.png')):
                 media_type = types.InputMediaPhoto
@@ -490,7 +492,7 @@ async def send_poll(user_id, message):
             media.append(input_media)
 
 
-        poll_options = [types.PollOption(text=i, voter_count=0) for i in options]
+
 
         if correct_option is not None and correct_option.isdigit():
             poll = types.Poll(question=title,
@@ -518,12 +520,22 @@ async def send_poll(user_id, message):
                                 )
     else:
         if correct_option is not None and correct_option.isdigit():
+            poll = types.Poll(question=title,
+                            options=[o.text for o in poll_options],
+                            type=types.PollType.QUIZ,
+                            correct_option_id=int(correct_option)-1)
+
             await bot.send_poll(chat_id=user_id,
                                 question=poll.question,
                                 options=[o.text for o in poll_options],
                                 type=poll.type,
                                 correct_option_id=poll.correct_option_id)
         else:
+            poll = types.Poll(question=title,
+                                    options=[o.text for o in poll_options],
+                                    type=types.PollType.REGULAR,
+                                    )
+
             await bot.send_poll(chat_id=user_id,
                                 question=poll.question,
                                 options=[o.text for o in poll_options],
