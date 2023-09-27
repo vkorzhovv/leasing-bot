@@ -122,7 +122,7 @@ def search_kb():
     return keyboard
 
 
-def get_product_kb():
+def get_product_kb(media):
     keyboard = InlineKeyboardMarkup()
     mediabutton = InlineKeyboardButton('Показать ещё', callback_data="media")
     button1 = InlineKeyboardButton('⬅️', callback_data="previous")
@@ -130,7 +130,8 @@ def get_product_kb():
     button3 = InlineKeyboardButton('Чат с менеджером', callback_data="manager_chat")
     button4 = InlineKeyboardButton('Запрос на КП', callback_data="kp")
     button5 = InlineKeyboardButton('Меню 🎛', callback_data="models")
-    keyboard.row(mediabutton)
+    if len(media)>0:
+        keyboard.row(mediabutton)
     keyboard.row(button1, button2)
     keyboard.row(button4)
     keyboard.row(button3)
@@ -160,7 +161,7 @@ def get_items_kb():
     keyboard.row(button3)
     return keyboard
 
-def get_promotions_kb():
+def get_promotions_kb(media):
     keyboard = InlineKeyboardMarkup()
     mediabutton = InlineKeyboardButton('Показать ещё', callback_data="media")
     button1 = InlineKeyboardButton('⬅️', callback_data="previous_promotion")
@@ -168,7 +169,8 @@ def get_promotions_kb():
     button3 = InlineKeyboardButton('Чат с менеджером', callback_data="manager_chat")
     button4 = InlineKeyboardButton('Запрос на КП', callback_data="kp")
     button5 = InlineKeyboardButton('Меню 🎛', callback_data="models")
-    keyboard.row(mediabutton)
+    if len(media)>0:
+        keyboard.row(mediabutton)
     keyboard.row(button1, button2)
     keyboard.row(button4)
     keyboard.row(button3)
@@ -483,6 +485,7 @@ async def activate_user_handler(callback_query: CallbackQuery, state: FSMContext
     if time!='None':
         asyncio.create_task(schedule_poll_mailing(message=message, time=time))
     else:
+        print('check')
         await do_poll_mailing(message)
 
     logging.info(f"Опрос {message[0].split(': ')[1]} был одобрен на рассылку админом")
@@ -641,16 +644,18 @@ async def cmd_catalog(message: types.Message, state: FSMContext) -> None:
                     promotion = data_list[0]
 
                     photo = await download_photo(promotion["photo"])
+                    price = '{:,.0f}'.format(float(promotion['price'])).replace(',', ' ')
+                    media = await get_product_media(str(promotion['id']))
                     if not photo:
-                        s = f"ID товара: {promotion['id']}\nМарка: {promotion['brand']}\nМодель: {promotion['product_model']}\nКомплектация: {promotion['equipment']}\nПроизводитель: {promotion['manufacturer']}\nГод выпуска: {promotion['year']}\nСтоимость: {promotion['price']} {promotion['currency']}\nСтатус: {promotion['status']}"
+                        s = f"<b>ID товара</b>: {promotion['id']}\n<b>Название</b>: {promotion['name']}\n<b>Описание</b>:\n {promotion['description']}\n<b>Марка</b>: {promotion['brand']}\n<b>Модель</b>: {promotion['product_model']}\n<b>Комплектация</b>: {promotion['equipment']}\n<b>Производитель</b>: {promotion['manufacturer']}\n<b>Год выпуска</b>: {promotion['year']}\n<b>Стоимость</b>: {price} {promotion['currency']}\n<b>Статус</b>: {promotion['status']}"
                         filtered_lines = [line for line in s.split('\n') if line.split(':')[1] != ' None']
                         result = '\n'.join(filtered_lines)
-                        a = await message.answer(result.replace('None', '')+'\n\nАкция!', reply_markup=get_promotions_kb())
+                        a = await message.answer(result.replace('None', '')+'\n\nАкция!', reply_markup=get_promotions_kb(media), parse_mode=types.ParseMode.HTML)
                     else:
-                        s = f"ID товара: {promotion['id']}\nМарка: {promotion['brand']}\nМодель: {promotion['product_model']}\nКомплектация: {promotion['equipment']}\nПроизводитель: {promotion['manufacturer']}\nГод выпуска: {promotion['year']}\nСтоимость: {promotion['price']} {promotion['currency']}\nСтатус: {promotion['status']}"
+                        s = f"<b>ID товара</b>: {promotion['id']}\n<b>Название</b>: {promotion['name']}\n<b>Описание</b>:\n {promotion['description']}\n<b>Марка</b>: {promotion['brand']}\n<b>Модель</b>: {promotion['product_model']}\n<b>Комплектация</b>: {promotion['equipment']}\n<b>Производитель</b>: {promotion['manufacturer']}\n<b>Год выпуска</b>: {promotion['year']}\n<b>Стоимость</b>: {price} {promotion['currency']}\n<b>Статус</b>: {promotion['status']}"
                         filtered_lines = [line for line in s.split('\n') if line.split(':')[1] != ' None']
                         result = '\n'.join(filtered_lines)
-                        a = await bot.send_photo(message.from_user.id, photo, caption=result.replace('None', '')+'\n\nАкция!', reply_markup=get_promotions_kb())
+                        a = await bot.send_photo(message.from_user.id, photo, caption=result.replace('None', '')+'\n\nАкция!', reply_markup=get_promotions_kb(media), parse_mode=types.ParseMode.HTML)
 
                     data['promotion_message_id'] = a.message_id
                     data['promotion_name'] = promotion['name']
@@ -778,8 +783,8 @@ async def promotions_navigation(callback_query: CallbackQuery, state: FSMContext
         current_index = current_data.get('promotion_index', 0)
 
         if callback_query.data == 'previous_promotion':
-            if current_index!=0:
-                current_index -= 1
+            # if current_index!=0:
+            current_index -= 1
         elif callback_query.data == 'next_promotion':
             current_index += 1
 
@@ -789,31 +794,66 @@ async def promotions_navigation(callback_query: CallbackQuery, state: FSMContext
         try:
             promotion = promotions[current_index]
             photo = await download_photo(promotion["photo"])
-            if current_data['promotion_name'] != promotion['name'] and current_data['promotion_description'] != promotion['promotion_description']:
+            if current_data['promotion_description']==None and promotion['promotion_description']==None:
+                success = bool(current_data['promotion_name'] != promotion['name'])
+            else:
+                success = bool(current_data['promotion_name'] != promotion['name'] and current_data['promotion_description'] != promotion['promotion_description'])
+            if success:
+                price = '{:,.0f}'.format(float(promotion['price'])).replace(',', ' ')
+                media = await get_product_media(str(promotion['id']))
                 if not photo:
-                    s = f"ID товара: {promotion['id']}\nМарка: {promotion['brand']}\nМодель: {promotion['product_model']}\nКомплектация: {promotion['equipment']}\nПроизводитель: {promotion['manufacturer']}\nГод выпуска: {promotion['year']}\nСтоимость: {promotion['price']} {promotion['currency']}\nСтатус: {promotion['status']}"
+                    s = f"<b>ID товара</b>: {promotion['id']}\n<b>Название</b>: {promotion['name']}\n<b>Описание</b>:\n {promotion['description']}\n<b>Марка</b>: {promotion['brand']}\n<b>Модель</b>: {promotion['product_model']}\n<b>Комплектация</b>: {promotion['equipment']}\n<b>Производитель</b>: {promotion['manufacturer']}\n<b>Год выпуска</b>: {promotion['year']}\n<b>Стоимость</b>: {price} {promotion['currency']}\n<b>Статус</b>: {promotion['status']}"
                     filtered_lines = [line for line in s.split('\n') if line.split(':')[1] != ' None']
                     result = '\n'.join(filtered_lines)
-                    a = await bot.send_message(callback_query.from_user.id, result.replace('None', '')+'\n\nАкция!', reply_markup=get_promotions_kb())
+                    a = await bot.send_message(callback_query.from_user.id, result.replace('None', '')+'\n\nАкция!', reply_markup=get_promotions_kb(media), parse_mode=types.ParseMode.HTML)
                     await bot.delete_message(chat_id=callback_query.message.chat.id, message_id=current_data['promotion_message_id'])
                     current_data['promotion_message_id'] = a.message_id
                 else:
-                    s = f"ID товара: {promotion['id']}\nМарка: {promotion['brand']}\nМодель: {promotion['product_model']}\nКомплектация: {promotion['equipment']}\nПроизводитель: {promotion['manufacturer']}\nГод выпуска: {promotion['year']}\nСтоимость: {promotion['price']} {promotion['currency']}\nСтатус: {promotion['status']}"
+                    s = f"<b>ID товара</b>: {promotion['id']}\n<b>Название</b>: {promotion['name']}\n<b>Описание</b>:\n {promotion['description']}\n<b>Марка</b>: {promotion['brand']}\n<b>Модель</b>: {promotion['product_model']}\n<b>Комплектация</b>: {promotion['equipment']}\n<b>Производитель</b>: {promotion['manufacturer']}\n<b>Год выпуска</b>: {promotion['year']}\n<b>Стоимость</b>: {price} {promotion['currency']}\n<b>Статус</b>: {promotion['status']}"
                     filtered_lines = [line for line in s.split('\n') if line.split(':')[1] != ' None']
                     result = '\n'.join(filtered_lines)
-                    a = await bot.send_photo(callback_query.from_user.id, photo, caption=result.replace('None', '')+'\n\nАкция!', reply_markup=get_promotions_kb())
+                    a = await bot.send_photo(callback_query.from_user.id, photo, caption=result.replace('None', '')+'\n\nАкция!', reply_markup=get_promotions_kb(media), parse_mode=types.ParseMode.HTML)
                     await bot.delete_message(chat_id=callback_query.message.chat.id, message_id=current_data['promotion_message_id'])
                     current_data['promotion_message_id'] = a.message_id
 
                 current_data['promotion_name'] = promotion['name']
                 current_data['promotion_description'] = promotion['promotion_description']
             else:
-                await callback_query.answer("Достигнут край списка продуктов.", show_alert=True)
+                await callback_query.answer("Достигнут край списка акций.", show_alert=True)
         except:
-            current_index -= 1
-            current_data['promotion_index'] = current_index
-            await callback_query.answer("Достигнут край списка продуктов.", show_alert=True)
+            if current_index == len(promotions):
+                current_data['promotion_index'] = 0
+                promotion = promotions[0]
+            else:
+                current_data['promotion_index'] = len(promotions)
+                promotion = promotions[len(promotions)-1]
+            photo = await download_photo(promotion["photo"])
+            if current_data['promotion_description']==None and promotion['promotion_description']==None:
+                success = bool(current_data['promotion_name'] != promotion['name'])
+            else:
+                success = bool(current_data['promotion_name'] != promotion['name'] and current_data['promotion_description'] != promotion['promotion_description'])
+            if success:
+                price = '{:,.0f}'.format(float(promotion['price'])).replace(',', ' ')
+                media = await get_product_media(str(promotion['id']))
+                if not photo:
+                    s = f"<b>ID товара</b>: {promotion['id']}\n<b>Название</b>: {promotion['name']}\n<b>Описание</b>:\n {promotion['description']}\n<b>Марка</b>: {promotion['brand']}\n<b>Модель</b>: {promotion['product_model']}\n<b>Комплектация</b>: {promotion['equipment']}\n<b>Производитель</b>: {promotion['manufacturer']}\n<b>Год выпуска</b>: {promotion['year']}\n<b>Стоимость</b>: {price} {promotion['currency']}\n<b>Статус</b>: {promotion['status']}"
+                    filtered_lines = [line for line in s.split('\n') if line.split(':')[1] != ' None']
+                    result = '\n'.join(filtered_lines)
+                    a = await bot.send_message(callback_query.from_user.id, result.replace('None', '')+'\n\nАкция!', reply_markup=get_promotions_kb(media), parse_mode=types.ParseMode.HTML)
+                    await bot.delete_message(chat_id=callback_query.message.chat.id, message_id=current_data['promotion_message_id'])
+                    current_data['promotion_message_id'] = a.message_id
+                else:
+                    s = f"<b>ID товара</b>: {promotion['id']}\n<b>Название</b>: {promotion['name']}\n<b>Описание</b>:\n {promotion['description']}\n<b>Марка</b>: {promotion['brand']}\n<b>Модель</b>: {promotion['product_model']}\n<b>Комплектация</b>: {promotion['equipment']}\n<b>Производитель</b>: {promotion['manufacturer']}\n<b>Год выпуска</b>: {promotion['year']}\n<b>Стоимость</b>: {price} {promotion['currency']}\n<b>Статус</b>: {promotion['status']}"
+                    filtered_lines = [line for line in s.split('\n') if line.split(':')[1] != ' None']
+                    result = '\n'.join(filtered_lines)
+                    a = await bot.send_photo(callback_query.from_user.id, photo, caption=result.replace('None', '')+'\n\nАкция!', reply_markup=get_promotions_kb(media), parse_mode=types.ParseMode.HTML)
+                    await bot.delete_message(chat_id=callback_query.message.chat.id, message_id=current_data['promotion_message_id'])
+                    current_data['promotion_message_id'] = a.message_id
 
+                current_data['promotion_name'] = promotion['name']
+                current_data['promotion_description'] = promotion['promotion_description']
+            else:
+                await callback_query.answer("Достигнут край списка акций.", show_alert=True)
 
 @dp.callback_query_handler(lambda query: query.data == 'next_item', state="*")
 @dp.callback_query_handler(lambda query: query.data == 'previous_item', state="*")
@@ -823,8 +863,8 @@ async def process_news_or_stories_navigation(callback_query: CallbackQuery, stat
         current_index = current_data.get('current_index', 0)
 
         if callback_query.data == 'previous_item':
-            if current_index!=0:
-                current_index -= 1
+            # if current_index!=0:
+            current_index -= 1
         elif callback_query.data == 'next_item':
             current_index += 1
 
@@ -848,12 +888,31 @@ async def process_news_or_stories_navigation(callback_query: CallbackQuery, stat
                 current_data['item_name'] = item['name']
                 current_data['item_description'] = item['description']
             else:
-                await callback_query.answer("Достигнут край списка продуктов.", show_alert=True)
+                await callback_query.answer("Достигнут край списка новостей/актуальных.", show_alert=True)
         except:
-            current_index -= 1
-            current_data['current_index'] = current_index
-            await callback_query.answer("Достигнут край списка продуктов.", show_alert=True)
+            if current_index == len(items):
+                current_data['current_index'] = 0
+                item = items[0]
+            else:
+                current_data['current_index'] = len(items)-1
+                item = items[len(items)-1]
 
+            await create_storynews_views(item["id"])
+            photo = await download_photo(item["photo"])
+            if current_data['item_name'] != item['name'] and current_data['item_description'] != item['description']:
+                if not photo:
+                    a = await bot.send_message(callback_query.from_user.id, f"{item['name']}:\n{item['description']}".replace('None', ''), reply_markup=get_items_kb())
+                    await bot.delete_message(chat_id=callback_query.message.chat.id, message_id=current_data['item_message_id'])
+                    current_data['item_message_id'] = a.message_id
+                else:
+                    a = await bot.send_photo(callback_query.from_user.id, photo, caption=f'{item["name"]} - {item["description"]}'.replace('None', ''), reply_markup=get_items_kb())
+                    await bot.delete_message(chat_id=callback_query.message.chat.id, message_id=current_data['item_message_id'])
+                    current_data['item_message_id'] = a.message_id
+
+                current_data['item_name'] = item['name']
+                current_data['item_description'] = item['description']
+            else:
+                await callback_query.answer("Достигнут край списка новостей/актуальных.", show_alert=True)
 
 @dp.callback_query_handler(lambda query: query.data == 'models', state='*')
 async def menu_product_navigation(callback_query: CallbackQuery, state: FSMContext):
@@ -1032,8 +1091,8 @@ async def process_product_navigation(callback_query: CallbackQuery, state: FSMCo
         current_index = current_data.get('current_index', 0)
 
         if callback_query.data == 'previous':
-            if current_index!=0:
-                current_index -= 1
+            # if current_index!=0:
+            current_index -= 1
         if callback_query.data == 'next':
             current_index += 1
 
@@ -1047,18 +1106,54 @@ async def process_product_navigation(callback_query: CallbackQuery, state: FSMCo
             photo = await download_photo(product["photo"])
             if current_data['product_name'] != product['name'] and str(current_data['product_price']) != str(product['price']):
                 promotion = '\n\nАкция!' if product['promotion'] else ''
+                price = '{:,.0f}'.format(float(product['price'])).replace(',', ' ')
+                media = await get_product_media(str(product['id']))
                 if photo:
-                    s = f"ID товара: {product['id']}\nМарка: {product['brand']}\nМодель: {product['product_model']}\nКомплектация: {product['equipment']}\nПроизводитель: {product['manufacturer']}\nГод выпуска: {product['year']}\nСтоимость: {product['price']} {product['currency']}\nСтатус: {product['status']}"
+                    s = f"<b>ID товара</b>: {product['id']}\n<b>Название</b>: {product['name']}\n<b>Описание</b>: \n{product['description']}\n<b>Марка</b>: {product['brand']}\n<b>Модель</b>: {product['product_model']}\n<b>Комплектация</b>: {product['equipment']}\n<b>Производитель</b>: {product['manufacturer']}\n<b>Год выпуска</b>: {product['year']}\n<b>Стоимость</b>: {price} {product['currency']}\n<b>Статус</b>: {product['status']}"
                     filtered_lines = [line for line in s.split('\n') if line.split(':')[1] != ' None']
                     result = '\n'.join(filtered_lines)
-                    a = await bot.send_photo(callback_query.from_user.id, photo, caption=result.replace('None', '')+promotion, reply_markup=get_product_kb())
+                    a = await bot.send_photo(callback_query.from_user.id, photo, caption=result.replace('None', '')+promotion, reply_markup=get_product_kb(media), parse_mode=types.ParseMode.HTML)
                     await bot.delete_message(chat_id=callback_query.message.chat.id, message_id=current_data['product_message_id'])
                     current_data['product_message_id'] = a.message_id
                 else:
-                    s = f"ID товара: {product['id']}\nМарка: {product['brand']}\nМодель: {product['product_model']}\nКомплектация: {product['equipment']}\nПроизводитель: {product['manufacturer']}\nГод выпуска: {product['year']}\nСтоимость: {product['price']} {product['currency']}\nСтатус: {product['status']}"
+                    s = f"<b>ID товара</b>: {product['id']}\n<b>Название</b>: {product['name']}\n<b>Описание</b>: \n{product['description']}\n<b>Марка</b>: {product['brand']}\n<b>Модель</b>: {product['product_model']}\n<b>Комплектация</b>: {product['equipment']}\n<b>Производитель</b>: {product['manufacturer']}\n<b>Год выпуска</b>: {product['year']}\n<b>Стоимость</b>: {price} {product['currency']}\n<b>Статус</b>: {product['status']}"
                     filtered_lines = [line for line in s.split('\n') if line.split(':')[1] != ' None']
                     result = '\n'.join(filtered_lines)
-                    a = await bot.send_message(callback_query.from_user.id, text=result.replace('None', '')+promotion, reply_markup=get_product_kb())
+                    a = await bot.send_message(callback_query.from_user.id, text=result.replace('None', '')+promotion, reply_markup=get_product_kb(media), parse_mode=types.ParseMode.HTML)
+                    await bot.delete_message(chat_id=callback_query.message.chat.id, message_id=current_data['product_message_id'])
+                    current_data['product_message_id'] = a.message_id
+
+                current_data['product_name'] = product['name']
+                current_data['product_price'] = product['price']
+            else:
+                print(current_data['product_name'], product['name'], str(current_data['product_price']), str(product['price']), sep='\n')
+                await callback_query.answer("Достигнут край списка продуктов.", show_alert=True)
+
+        except Exception as e:
+            if current_index == len(products):
+                current_data['current_index'] = 0
+                product = products[0]
+            else:
+                current_data['current_index'] = len(products)-1
+                product = products[len(products)-1]
+            await create_product_views(product["id"])
+            photo = await download_photo(product["photo"])
+            if current_data['product_name'] != product['name'] and str(current_data['product_price']) != str(product['price']):
+                promotion = '\n\nАкция!' if product['promotion'] else ''
+                price = '{:,.0f}'.format(float(product['price'])).replace(',', ' ')
+                media = await get_product_media(str(product['id']))
+                if photo:
+                    s = f"<b>ID товара</b>: {product['id']}\n<b>Название</b>: {product['name']}\n<b>Описание</b>: \n{product['description']}\n<b>Марка</b>: {product['brand']}\n<b>Модель</b>: {product['product_model']}\n<b>Комплектация</b>: {product['equipment']}\n<b>Производитель</b>: {product['manufacturer']}\n<b>Год выпуска</b>: {product['year']}\n<b>Стоимость</b>: {price} {product['currency']}\n<b>Статус</b>: {product['status']}"
+                    filtered_lines = [line for line in s.split('\n') if line.split(':')[1] != ' None']
+                    result = '\n'.join(filtered_lines)
+                    a = await bot.send_photo(callback_query.from_user.id, photo, caption=result.replace('None', '')+promotion, reply_markup=get_product_kb(media), parse_mode=types.ParseMode.HTML)
+                    await bot.delete_message(chat_id=callback_query.message.chat.id, message_id=current_data['product_message_id'])
+                    current_data['product_message_id'] = a.message_id
+                else:
+                    s = f"<b>ID товара</b>: {product['id']}\n<b>Название</b>: {product['name']}\n<b>Описание</b>: \n{product['description']}\n<b>Марка</b>: {product['brand']}\n<b>Модель</b>: {product['product_model']}\n<b>Комплектация</b>: {product['equipment']}\n<b>Производитель</b>: {product['manufacturer']}\n<b>Год выпуска</b>: {product['year']}\n<b>Стоимость</b>: {price} {product['currency']}\n<b>Статус</b>: {product['status']}"
+                    filtered_lines = [line for line in s.split('\n') if line.split(':')[1] != ' None']
+                    result = '\n'.join(filtered_lines)
+                    a = await bot.send_message(callback_query.from_user.id, text=result.replace('None', '')+promotion, reply_markup=get_product_kb(media), parse_mode=types.ParseMode.HTML)
                     await bot.delete_message(chat_id=callback_query.message.chat.id, message_id=current_data['product_message_id'])
                     current_data['product_message_id'] = a.message_id
 
@@ -1067,10 +1162,6 @@ async def process_product_navigation(callback_query: CallbackQuery, state: FSMCo
             else:
                 await callback_query.answer("Достигнут край списка продуктов.", show_alert=True)
 
-        except Exception as e:
-            current_index -= 1
-            current_data['current_index'] = current_index
-            await callback_query.answer("Достигнут край списка продуктов.", show_alert=True)
 
 
 @dp.callback_query_handler(lambda query: True, state=SearchStatesGroup.year)
@@ -1111,19 +1202,21 @@ async def process_brand(callback_query: CallbackQuery, state: FSMContext):
 
                 photo = await download_photo(product["photo"])
                 promotion = '\n\nАкция!' if product['promotion'] else ''
+                price = '{:,.0f}'.format(float(product['price'])).replace(',', ' ')
+                media = await get_product_media(str(product['id']))
                 if photo!=None:
-                    s = f"ID товара: {product['id']}\nМарка: {product['brand']}\nМодель: {product['product_model']}\nКомплектация: {product['equipment']}\nПроизводитель: {product['manufacturer']}\nГод выпуска: {product['year']}\nСтоимость: {product['price']} {product['currency']}\nСтатус: {product['status']}"
+                    s = f"<b>ID товара</b>: {product['id']}\n<b>Название</b>: {product['name']}\n<b>Описание</b>: \n{product['description']}\n<b>Марка</b>: {product['brand']}\n<b>Модель</b>: {product['product_model']}\n<b>Комплектация</b>: {product['equipment']}\n<b>Производитель</b>: {product['manufacturer']}\n<b>Год выпуска</b>: {product['year']}\n<b>Стоимость</b>: {price} {product['currency']}\n<b>Статус</b>: {product['status']}"
                     filtered_lines = [line for line in s.split('\n') if line.split(':')[1] != ' None']
                     result = '\n'.join(filtered_lines)
-                    a = await bot.send_photo(callback_query.from_user.id, photo, caption=result.replace('None', '')+promotion, reply_markup=get_product_kb())
+                    a = await bot.send_photo(callback_query.from_user.id, photo, caption=result.replace('None', '')+promotion, reply_markup=get_product_kb(media), parse_mode=types.ParseMode.HTML)
                     data['product_message_id'] = a.message_id
                     data['product_name'] = product['name']
                     data['product_price'] = product['price']
                 else:
-                    s = f"ID товара: {product['id']}\nМарка: {product['brand']}\nМодель: {product['product_model']}\nКомплектация: {product['equipment']}\nПроизводитель: {product['manufacturer']}\nГод выпуска: {product['year']}\nСтоимость: {product['price']} {product['currency']}\nСтатус: {product['status']}"
+                    s = f"<b>ID товара</b>: {product['id']}\n<b>Название</b>: {product['name']}\n<b>Описание</b>: \n{product['description']}\n<b>Марка</b>: {product['brand']}\n<b>Модель</b>: {product['product_model']}\n<b>Комплектация</b>: {product['equipment']}\n<b>Производитель</b>: {product['manufacturer']}\n<b>Год выпуска</b>: {product['year']}\n<b>Стоимость</b>: {price} {product['currency']}\n<b>Статус</b>: {product['status']}"
                     filtered_lines = [line for line in s.split('\n') if line.split(':')[1] != ' None']
                     result = '\n'.join(filtered_lines)
-                    a = await bot.send_message(callback_query.from_user.id, text=result.replace('None', '')+promotion, reply_markup=get_product_kb())
+                    a = await bot.send_message(callback_query.from_user.id, text=result.replace('None', '')+promotion, reply_markup=get_product_kb(media), parse_mode=types.ParseMode.HTML)
                     data['product_message_id'] = a.message_id
                     data['product_name'] = product['name']
                     data['product_price'] = product['price']
@@ -1175,19 +1268,21 @@ async def callback_category(callback_query: CallbackQuery, state: FSMContext):
 
                 photo = await download_photo(product["photo"])
                 promotion = '\n\nАкция!' if product['promotion'] else ''
+                price = '{:,.0f}'.format(float(product['price'])).replace(',', ' ')
+                media = await get_product_media(str(product['id']))
                 if photo!=None:
-                    s = f"ID товара: {product['id']}\nМарка: {product['brand']}\nМодель: {product['product_model']}\nКомплектация: {product['equipment']}\nПроизводитель: {product['manufacturer']}\nГод выпуска: {product['year']}\nСтоимость: {product['price']} {product['currency']}\nСтатус: {product['status']}"
+                    s = f"<b>ID товара</b>: {product['id']}\n<b>Название</b>: {product['name']}\n<b>Описание</b>: \n{product['description']}\n<b>Марка</b>: {product['brand']}\n<b>Модель</b>: {product['product_model']}\n<b>Комплектация</b>: {product['equipment']}\n<b>Производитель</b>: {product['manufacturer']}\n<b>Год выпуска</b>: {product['year']}\n<b>Стоимость</b>: {price} {product['currency']}\n<b>Статус</b>: {product['status']}"
                     filtered_lines = [line for line in s.split('\n') if line.split(':')[1] != ' None']
                     result = '\n'.join(filtered_lines)
-                    a = await bot.send_photo(callback_query.from_user.id, photo, caption=result.replace('None', '')+promotion, reply_markup=get_product_kb())
+                    a = await bot.send_photo(callback_query.from_user.id, photo, caption=result.replace('None', '')+promotion, reply_markup=get_product_kb(media), parse_mode=types.ParseMode.HTML)
                     data['product_message_id'] = a.message_id
                     data['product_name'] = product['name']
                     data['product_price'] = product['price']
                 else:
-                    s = f"ID товара: {product['id']}\nМарка: {product['brand']}\nМодель: {product['product_model']}\nКомплектация: {product['equipment']}\nПроизводитель: {product['manufacturer']}\nГод выпуска: {product['year']}\nСтоимость: {product['price']} {product['currency']}\nСтатус: {product['status']}"
+                    s = f"<b>ID товара</b>: {product['id']}\n<b>Название</b>: {product['name']}\n<b>Описание</b>: \n{product['description']}\n<b>Марка</b>: {product['brand']}\n<b>Модель</b>: {product['product_model']}\n<b>Комплектация</b>: {product['equipment']}\n<b>Производитель</b>: {product['manufacturer']}\n<b>Год выпуска</b>: {product['year']}\n<b>Стоимость</b>: {price} {product['currency']}\n<b>Статус</b>: {product['status']}"
                     filtered_lines = [line for line in s.split('\n') if line.split(':')[1] != ' None']
                     result = '\n'.join(filtered_lines)
-                    a = await bot.send_message(callback_query.from_user.id, text=result.replace('None', '')+promotion, reply_markup=get_product_kb())
+                    a = await bot.send_message(callback_query.from_user.id, text=result.replace('None', '')+promotion, reply_markup=get_product_kb(media), parse_mode=types.ParseMode.HTML)
                     data['product_message_id'] = a.message_id
                     data['product_name'] = product['name']
                     data['product_price'] = product['price']
@@ -1222,3 +1317,6 @@ async def callback_category(callback_query: CallbackQuery, state: FSMContext):
 
 if __name__ == '__main__':
     executor.start_polling(dp,skip_updates=True)
+
+
+

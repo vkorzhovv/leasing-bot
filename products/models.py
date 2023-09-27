@@ -45,7 +45,7 @@ class Product(models.Model):
     category = models.ForeignKey(Category, on_delete=models.CASCADE, null=True, blank=True, related_name = 'products', verbose_name='Категория')
     category2 = models.ForeignKey(Category, on_delete=models.CASCADE, null=True, blank=True, related_name = 'products2', verbose_name='Категория2')
     product_model = models.CharField(max_length=128, null=True, blank=True, verbose_name='Модель')
-    name = models.CharField(max_length=20, null=True, blank=True, verbose_name='Название')
+    name = models.CharField(max_length=128, null=True, blank=True, verbose_name='Название')
     price = models.DecimalField(max_digits=10, decimal_places=2 , null=True, blank=True, verbose_name='Стоимость')
     photo = models.ImageField(upload_to='images', blank=True, verbose_name='Фотография')
     photo_url = models.CharField(max_length=128, null=True, blank=True, verbose_name='Адрес для яндекс-картинки')
