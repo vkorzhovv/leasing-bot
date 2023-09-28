@@ -736,7 +736,7 @@ async def create_category_views(category_id):
 
 
 async def get_manager_with_category(product_id):
-    endpoint = f"{domen}api/users_with_category/{product_id}/"
+    endpoint = f"{domen}api/users_with_category/{product_id}/"      
 
     async with aiohttp.ClientSession() as session:
         async with session.get(endpoint) as response:
@@ -884,7 +884,7 @@ async def increment_product_manager_chat(product_id):
 
 async def some_async_function():
     # Ваш код, где вы хотите вызвать функцию get_categories_list()
-    a = await increment_product_manager_chat("2")
+    a = await get_kp_path(109)
     print(a)
 
 if __name__ == "__main__":

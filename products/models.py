@@ -118,11 +118,30 @@ class Product(models.Model):
 
 class ProductMedia(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='mediafiles', verbose_name='Товар')
-    media = models.FileField(upload_to='product_media/', blank=True, verbose_name='Доп. фотки')
+    media = models.FileField(upload_to='product_media/', blank=True, null=True, verbose_name='Доп. фотки')
+    media_url = models.CharField(max_length=128, null=True, blank=True, verbose_name='Адрес для яндекс-картинки')
     absolute_media_path = models.CharField(max_length=255, blank=True, verbose_name='Абсолютный путь до медиа')
 
     def save(self, *args, **kwargs):
-        self.absolute_media_path = self.get_absolute_media_path()
+        if self.media_url:
+            base_url = 'https://cloud-api.yandex.net/v1/disk/public/resources/download?'
+            public_key = self.media_url
+
+            final_url = base_url + urlencode(dict(public_key=public_key))
+            response = requests.get(final_url)
+            download_url = response.json()['href']
+            parsed_url = urlparse(download_url)
+            filename = unquote(parsed_url.query.split("&filename=")[1].split("&")[0])
+
+            download_response = requests.get(download_url)
+            file_content = download_response.content
+
+
+            temp_file = File(io.BytesIO(file_content), name=filename)
+            self.media = temp_file
+
+        if self.media:
+            self.absolute_media_path = self.get_absolute_media_path()
         return super().save(*args, **kwargs)
 
     def get_absolute_media_path(self):

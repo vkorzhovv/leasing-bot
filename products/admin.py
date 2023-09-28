@@ -7,7 +7,32 @@ import io
 from import_export.admin import ExportActionModelAdmin, ImportExportModelAdmin
 from import_export.formats.base_formats import DEFAULT_FORMATS
 from products.formats import XML
-from import_export import resources
+from import_export import resources, fields, widgets
+
+
+
+
+class ProductMediaResource(resources.ModelResource):
+
+    def skip_row(self, instance, original, row, import_validation_errors=None):
+        # Проверяем, если у экземпляра пустое поле category
+        if not instance.media_url:
+            return True  # Если пусто, игнорируем эту строку
+        return super().skip_row(instance, original, row, import_validation_errors=import_validation_errors)
+
+    class Meta:
+        model = ProductMedia
+        exclude = ('media', 'absolute_media_path')  # Замените field1, field2 и field3 на реальные имена полей, которые вы хотите исключить
+
+
+
+
+@admin.register(ProductMedia)
+class ProductMediaAdmin(ImportExportModelAdmin):
+    resource_class = ProductMediaResource
+    list_display = ('id', 'media', 'media_url', 'absolute_media_path')
+
+
 
 
 
@@ -22,6 +47,19 @@ class PostMediaInline(admin.StackedInline):
 
 
 class ProductResource(resources.ModelResource):
+    def __init__(self, **kwargs):
+        super(ProductResource, self).__init__(**kwargs)
+        self.media_urls = []
+
+    def before_import_row(self, row, row_number=None, **kwargs):
+        if row['media_url']!=None:
+            for url in row['media_url'].split():
+                self.media_urls.append(url)
+
+    def after_save_instance(self, instance, using_transactions, dry_run):
+        for media_url in self.media_urls:
+            ProductMedia(media_url=media_url, product=instance).save()
+        self.media_urls = []
 
     def skip_row(self, instance, original, row, import_validation_errors=None):
         # Проверяем, если у экземпляра пустое поле category
@@ -32,8 +70,6 @@ class ProductResource(resources.ModelResource):
     class Meta:
         model = Product
         exclude = ('created_at', 'updated_at', 'photo', 'kp')  # Замените field1, field2 и field3 на реальные имена полей, которые вы хотите исключить
-
-
 
 
 @admin.register(Product)

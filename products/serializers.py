@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import Product, ProductMedia
-
+import os
+from django.conf import settings
 
 class ProductListSerializer(serializers.ModelSerializer):
 
@@ -8,7 +9,7 @@ class ProductListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Product
-        fields = ('id', 'category', 'category2', 'brand', 'photo', 'name', 'description', 'price', 'product_model', 'year', 'equipment', 'manufacturer', 'status', 'currency', 'hide', 'promotion', 'promotion_description', 'position', 'wheels', 'species')
+        fields = ('id', 'category', 'category2', 'brand', 'kp', 'photo', 'name', 'description', 'price', 'product_model', 'year', 'equipment', 'manufacturer', 'status', 'currency', 'hide', 'promotion', 'promotion_description', 'position', 'wheels', 'species')
 
     def get_status(self, obj):
         # Ваша логика для получения display_status на основе obj.status
@@ -30,5 +31,7 @@ class ProductKPSerializer(serializers.ModelSerializer):
 
     def get_kp_path(self, obj):
         if obj.kp:
-            return obj.kp.path
+            kp_filename = os.path.basename(obj.kp.path)
+            return os.path.join(settings.BASE_DIR, 'media', 'kp', kp_filename)
+            # return obj.kp.path
         return None
