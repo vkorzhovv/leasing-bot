@@ -750,6 +750,8 @@ async def get_manager_with_category(product_id):
                 return "Error fetching data"
 
 
+
+
 async def get_city_from_location(latitude, longitude):
     url = f"https://nominatim.openstreetmap.org/reverse?format=json&lat={latitude}&lon={longitude}"
 
@@ -807,6 +809,21 @@ async def search_manager_id(manager_username):
             else:
                 result = await response.json()
                 return result
+
+
+async def search_user_by_id(user_id):
+    url = f"{domen}api/bot_user_id/search/{user_id}/"  # Замените на фактический URL
+
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            if response.status == 201:  # Ожидаемый статус создания объекта
+                result = await response.json()
+                return result
+            else:
+                result = await response.json()
+                return result
+
 
 
 async def get_product_media(product_id):
@@ -884,8 +901,8 @@ async def increment_product_manager_chat(product_id):
 
 async def some_async_function():
     # Ваш код, где вы хотите вызвать функцию get_categories_list()
-    a = await get_kp_path(109)
-    print(a)
+    a = await search_user_by_id(6006399730)
+    print(a["phone"])
 
 if __name__ == "__main__":
     asyncio.run(some_async_function())

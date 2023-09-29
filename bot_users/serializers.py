@@ -56,4 +56,4 @@ class BotUserCitySerializer(serializers.ModelSerializer):
 class BotUserSearchSerializer(serializers.ModelSerializer):
     class Meta:
         model = BotUser
-        fields = ('user_id', 'username')
+        fields = ('user_id', 'username', 'phone')

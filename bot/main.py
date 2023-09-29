@@ -129,7 +129,7 @@ def get_product_kb(media, products, kp):
     button2 = InlineKeyboardButton('➡️', callback_data="next")
     button3 = InlineKeyboardButton('Чат с менеджером', callback_data="manager_chat")
     button4 = InlineKeyboardButton('Запрос на КП', callback_data="kp")
-    button5 = InlineKeyboardButton('Меню 🎛', callback_data="models")
+    button5 = InlineKeyboardButton('Меню 🚚', callback_data="models")
     if len(media)>0:
         keyboard.row(mediabutton)
     if len(products)>1:
@@ -142,7 +142,7 @@ def get_product_kb(media, products, kp):
 
 def get_menu_keyboard():
     keyboard = InlineKeyboardMarkup()
-    button = InlineKeyboardButton('Меню 🎛', callback_data="models")
+    button = InlineKeyboardButton('Меню 🚚', callback_data="models")
     keyboard.row(button)
     return keyboard
 
@@ -158,7 +158,7 @@ def get_items_kb(items):
     keyboard = InlineKeyboardMarkup()
     button1 = InlineKeyboardButton('⬅️', callback_data="previous_item")
     button2 = InlineKeyboardButton('➡️', callback_data="next_item")
-    button3 = InlineKeyboardButton('Меню 🎛', callback_data="models")
+    button3 = InlineKeyboardButton('Меню 🚚', callback_data="models")
     if len(items)>1:
         keyboard.row(button1, button2)
     keyboard.row(button3)
@@ -171,7 +171,7 @@ def get_promotions_kb(media, promotions, kp):
     button2 = InlineKeyboardButton('➡️', callback_data="next_promotion")
     button3 = InlineKeyboardButton('Чат с менеджером', callback_data="manager_chat")
     button4 = InlineKeyboardButton('Запрос на КП', callback_data="kp")
-    button5 = InlineKeyboardButton('Меню 🎛', callback_data="models")
+    button5 = InlineKeyboardButton('Меню 🚚', callback_data="models")
     if len(media)>0:
         keyboard.row(mediabutton)
     if len(promotions)>1:
@@ -212,7 +212,7 @@ def create_category_keyboard_with_menu(categories):
     for category in categories:
         button = InlineKeyboardButton(category['name'], callback_data=f"{category['id']}")
         keyboard.row(button)
-    keyboard.row(InlineKeyboardButton('Меню 🎛', callback_data="menu"))
+    keyboard.row(InlineKeyboardButton('Меню 🚚', callback_data="menu"))
     return keyboard
 
 
@@ -722,10 +722,18 @@ async def callback_chat_with_manager(callback_query: CallbackQuery):
         product_id = callback_query.message.text.split('\n')[0].split(': ')[1]
     await create_product_chat(str(product_id))
     product_link = f"{domen}admin/products/product/{product_id}/change/"
-    bot_user = callback_query.from_user.username
-    manager_telegram_username = await get_manager_with_category(product_id=str(product_id))
-    await create_manager_request(product=f'{product} {product_link}', bot_user=bot_user, manager=manager_telegram_username)
-    await bot.send_message(callback_query.from_user.id, f"@{manager_telegram_username}")
+    bot_user = callback_query.from_user.id
+    print(bot_user)
+    phone = await search_user_by_id(bot_user)
+    try:
+        manager_telegram_username = await get_manager_with_category(product_id=str(product_id))
+        await create_manager_request(product=f'{product} {product_link}', bot_user=bot_user, manager=manager_telegram_username)
+        await bot.send_message(callback_query.from_user.id, f"@{manager_telegram_username}")
+
+        await bot.send_message(int(manager_telegram_username['user_id']), f"Запросил Чат: @{callback_query.from_user.username}\nТелефон: {phone['phone']}")
+    except:
+        await bot.send_message(int(admin_id), f"Запросил Чат: @{callback_query.from_user.username}\nТелефон: {phone['phone']}")
+
 
 
 @dp.callback_query_handler(lambda query: query.data == 'kp', state='*')
@@ -752,8 +760,9 @@ async def callback_kp_request(callback_query: CallbackQuery):
         await create_command(key='kp_sent_message', text='Запрос сформирован, скоро с Вами свяжутся')
         MESSAGES = await get_commands_list()
         await send_photo_with_url(TOKEN=TOKEN, CHAT_ID=str(callback_query.from_user.id), img_url=MESSAGES['kp_sent_message'][1], caption=MESSAGES['kp_sent_message'][0].replace('<p>', '').replace('</p>', '').replace('<br />', '')+f'\nЧат с менеджером: @{manager_telegram_username}', parse_mode=types.ParseMode.HTML, message=callback_query)
-    user = callback_query.from_user.username
+    user = callback_query.from_user.id
     path = await get_kp_path(product_id)
+    phone = await search_user_by_id(user)
     if path:
         with open(path, 'rb') as file:
             await bot.send_document(callback_query.from_user.id, InputFile(file))
@@ -763,9 +772,9 @@ async def callback_kp_request(callback_query: CallbackQuery):
     await create_kp_request(product=f'{product} {product_link}', bot_user=user, manager=manager_telegram_username)
     try:
         d = await search_manager_id(manager_telegram_username)
-        await bot.send_message(int(d['user_id']), f"{text}\ntelegram-user: {user}")
+        await bot.send_message(int(d['user_id']), f"{text}\nЗапросил КП: @{callback_query.from_user.username}\nТелефон: {phone['phone']}")
     except:
-        await bot.send_message(int(admin_id), f"{text}\ntelegram-user: {user}")
+        await bot.send_message(int(admin_id), f"{text}\nЗапросил КП: @{callback_query.from_user.username}\nТелефон: {phone['phone']}")
 
 
 @dp.callback_query_handler(lambda query: query.data == 'media', state="*")

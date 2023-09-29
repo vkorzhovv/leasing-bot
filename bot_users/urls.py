@@ -1,6 +1,5 @@
 from django.urls import path
-from .views import BotUserCreateView, ActivateUserView, update_last_interaction, ManagerView, BotUserListView, manager_results, CheckBotUserExistsView, CheckBotUserActivatedView, UsersWithCategoryAPIView, BotUserCityUpdateView, BotUserSearchView
-
+from .views import *
 
 urlpatterns = [
     path('create_bot_user/', BotUserCreateView.as_view(), name='create_bot_user'),
@@ -14,4 +13,5 @@ urlpatterns = [
     path('users_with_category/<int:product_id>/', UsersWithCategoryAPIView.as_view(), name='users-with-category'),
     path('botusers/<str:user_id>/update_city/', BotUserCityUpdateView.as_view(), name='update-city'),
     path('bot_user/search/<str:username>/', BotUserSearchView.as_view(), name='bot-user-search'),
+    path('bot_user_id/search/<str:user_id>/', BotUserSearchByIdView.as_view(), name='bot-user-search_by_id'),
 ]

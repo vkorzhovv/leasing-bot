@@ -272,6 +272,17 @@ class BotUserSearchView(APIView):
         return Response(serializer.data)
 
 
+class BotUserSearchByIdView(APIView):
+    def get(self, request, user_id, format=None):
+        try:
+            bot_user = BotUser.objects.get(user_id=user_id)
+        except BotUser.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        serializer = BotUserSearchSerializer(bot_user)
+        return Response(serializer.data)
+
+
 @login_required(login_url='/admin/login/')
 def dashboard_view(request):
     return render(request, 'bot_users/dashboard.html')
