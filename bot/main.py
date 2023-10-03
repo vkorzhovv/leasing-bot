@@ -1054,7 +1054,7 @@ async def process_species(callback_query: CallbackQuery, state: FSMContext):
     async with state.proxy() as data:
         data_list = data.get("data_list")
         message_id = data['message_id']
-        sent_message = await bot.send_message(chat_id=callback_query.message.chat.id, text="фильтрация колёсной формуле", reply_markup=wheels(data_list))
+        sent_message = await bot.send_message(chat_id=callback_query.message.chat.id, text="фильтрация по колёсной формуле", reply_markup=wheels(data_list))
         data['message_id'] = sent_message.message_id
         # await bot.send_message(callback_query.from_user.id, "Выберите колеса:", reply_markup=wheels(data_list))
     await SearchStatesGroup.next()
