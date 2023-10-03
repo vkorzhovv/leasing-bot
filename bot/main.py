@@ -1042,7 +1042,7 @@ async def process_wow(callback_query: CallbackQuery, state: FSMContext):
     async with state.proxy() as data:
         data_list = data.get("data_list")
         message_id = data['message_id']
-        sent_message = await bot.send_message(callback_query.from_user.id, 'фильтрация по виду', reply_markup=species(data_list))
+        sent_message = await bot.send_message(callback_query.from_user.id, 'фильтрация по стране производителя', reply_markup=country(data_list))
         data['message_id'] = sent_message.message_id
         # await bot.send_message(callback_query.from_user.id, "Выберите вид:", reply_markup=species(data_list))
     await SearchStatesGroup.next()
@@ -1078,7 +1078,7 @@ async def process_brand(callback_query: CallbackQuery, state: FSMContext):
     async with state.proxy() as data:
         data_list = data.get("data_list")
         message_id = data['message_id']
-        sent_message = await bot.send_message(chat_id=callback_query.message.chat.id, text="фильтрация по стране производителя", reply_markup=country(data_list))
+        sent_message = await bot.send_message(chat_id=callback_query.message.chat.id, text="фильтрация по виду", reply_markup=species(data_list))
         data['message_id'] = sent_message.message_id
         # await bot.send_message(callback_query.from_user.id,"Выберите страну производителя:", reply_markup=country(data_list))
     await SearchStatesGroup.next()
@@ -1195,8 +1195,7 @@ async def process_brand(callback_query: CallbackQuery, state: FSMContext):
         selected_year = data.get("selected_year")
         data_list = data.get("data_list")
 
-        filters = [selected_species, selected_wheels, selected_brand, selected_country, selected_year]
-
+        filters = [selected_country, selected_wheels, selected_brand, selected_species, selected_year]
 
         filtered_data_list = []
         for d in data_list:
@@ -1214,7 +1213,7 @@ async def process_brand(callback_query: CallbackQuery, state: FSMContext):
             async with state.proxy() as data:
                 data['products'] = filtered_data_list
                 data['current_index'] = 0
-
+ 
                 product = filtered_data_list[0]
                 await create_product_views(product["id"])
 
@@ -1222,7 +1221,8 @@ async def process_brand(callback_query: CallbackQuery, state: FSMContext):
 
                 photo = await download_photo(product["photo"])
                 promotion = '\n\nАкция!' if product['promotion'] else ''
-                price = '{:,.0f}'.format(float(product['price'])).replace(',', ' ')
+                if product['price'] != None:
+                    price = '{:,.0f}'.format(float(product['price'])).replace(',', ' ')
                 media = await get_product_media(str(product['id']))
                 kp = await get_kp_path(product['id'])
                 if photo!=None:
@@ -1243,7 +1243,7 @@ async def process_brand(callback_query: CallbackQuery, state: FSMContext):
                     data['product_price'] = product['price']
         else:
 
-            await bot.send_message(callback_query.from_user.id, text="Список продуктов пуст.")
+            await bot.send_message(callback_query.from_user.id, text="Список продуктов пуст.", reply_markup=get_menu_keyboard())
 
 
 
