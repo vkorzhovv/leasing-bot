@@ -9,6 +9,15 @@ from bot import storage, bot, dp, TOKEN, admin_username, admin_password, domen, 
 import datetime
 from dateutil.parser import parse
 import datetime
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup
+
+
+def set_options_kb(options):
+    keyboard = InlineKeyboardMarkup(row_width=1)
+    buttons = [InlineKeyboardButton(o[1], callback_data=f'option_{o[0]}') for o in options]
+    keyboard.add(*buttons)
+
+    return keyboard
 
 
 # Внесение зарегистрированного пользователя в БД
@@ -50,9 +59,9 @@ async def get_commands_list():
                     merged_dict = {key: value for item in response_data for key, value in item.items()}
                     return merged_dict
                 else:
-                    return None
+                    return []
             except: # Вывести информацию об исключении для отладки
-                return None
+                return []
 
 
 # Отправка фотографии с текстом во время регистрации
@@ -428,27 +437,29 @@ async def change_poll_status(poll_id):
                 return None
 
 
-async def do_poll_mailing(poll):
-    poll_id = poll[0].split(': ')[1]
-    try:
-        if poll[4].split(': ')[1].isdigit():
-            users = await get_botusers(poll[4].split(': ')[1])
+async def do_poll_mailing(poll_id, options, title, poll_group=None, media_paths=None):
+    #poll_id = poll[0].split(': ')[1]
+
+    if poll_group:
+        users = await get_botusers(poll_group)
+        if users:
             await post_poll_users_count(poll_id=poll_id, users_count=len(users))
-        else:
-            users = await get_botusers()
-            await post_poll_users_count(poll_id=poll_id, users_count=len(users))
-    except:
+    else:
         users = await get_botusers()
-        await post_poll_users_count(poll_id=poll_id, users_count=len(users))
+        if users:
+            await post_poll_users_count(poll_id=poll_id, users_count=len(users))
+    # except:
+    #     users = await get_botusers()
+    #     await post_poll_users_count(poll_id=poll_id, users_count=len(users))
     print(users)
     for user in users:
         try:
-            await send_poll(user, poll)
+            await send_poll(user, options, title, media_paths)
         except:
             None
 
 
-async def schedule_poll_mailing(message, time):
+async def schedule_poll_mailing(poll_id, options, title, time, poll_group=None, media_paths=None):
 
     dt_object = parse(time)
     dt_utc = dt_object.astimezone(datetime.timezone.utc)
@@ -464,83 +475,93 @@ async def schedule_poll_mailing(message, time):
     await asyncio.sleep(time_difference)
 
     # Вызываем асинхронную функцию для рассылки
-    await do_poll_mailing(message)
-
-
-async def send_poll(user_id, message):
-    media = []
-
-    poll_id = message[0].split(': ')[1]
-    options = message[2].split(': ')[1].split(',')
-    title = message[1].split(': ')[1]
-    correct_option = message[3].split(': ')[1]
-
-    media_paths = await get_poll_path(poll_id)
-
-    poll_options = [types.PollOption(text=i, voter_count=0) for i in options]
-
-    if len(media_paths)>0:
-        for photo_path in media_paths:
-            if photo_path.lower().endswith(('.jpg', '.jpeg', '.png')):
-                media_type = types.InputMediaPhoto
-            elif photo_path.lower().endswith(('.mp4', '.avi', '.mkv')):
-                media_type = types.InputMediaVideo
-            else:
-                continue
-            photo_file = open(photo_path, 'rb')
-            input_media = media_type(media=types.InputFile(photo_file))
-            media.append(input_media)
+    await do_poll_mailing(poll_id, options, title, poll_group, media_paths)
 
 
 
+async def send_poll(user, options, title, media_paths=None):
+    if media_paths != []:
+        media = types.MediaGroup()
+        for path in media_paths:
+            media.attach_photo(types.InputFile(rf'{path}'))
 
-        if correct_option is not None and correct_option.isdigit():
-            poll = types.Poll(question=title,
-                            options=[o.text for o in poll_options],
-                            type=types.PollType.QUIZ,
-                            correct_option_id=int(correct_option)-1)
+        await bot.send_media_group(user, media=media)
+    await bot.send_message(user, f'{title}', reply_markup=set_options_kb(options))
 
-            await bot.send_media_group(chat_id=user_id, media=media)
-            await bot.send_poll(chat_id=user_id,
-                                question=poll.question,
-                                options=[o.text for o in poll_options],
-                                type=poll.type,
-                                correct_option_id=poll.correct_option_id)
-        else:
-            poll = types.Poll(question=title,
-                            options=[o.text for o in poll_options],
-                            type=types.PollType.REGULAR,
-                            )
+# async def send_poll(user_id, message):
+    # media = []
 
-            await bot.send_media_group(chat_id=user_id, media=media)
-            await bot.send_poll(chat_id=user_id,
-                                question=poll.question,
-                                options=[o.text for o in poll_options],
-                                type=poll.type,
-                                )
-    else:
-        if correct_option is not None and correct_option.isdigit():
-            poll = types.Poll(question=title,
-                            options=[o.text for o in poll_options],
-                            type=types.PollType.QUIZ,
-                            correct_option_id=int(correct_option)-1)
+    # poll_id = message[0].split(': ')[1]
+    # options = message[2].split(': ')[1].split(',')
+    # title = message[1].split(': ')[1]
+    # correct_option = message[3].split(': ')[1]
 
-            await bot.send_poll(chat_id=user_id,
-                                question=poll.question,
-                                options=[o.text for o in poll_options],
-                                type=poll.type,
-                                correct_option_id=poll.correct_option_id)
-        else:
-            poll = types.Poll(question=title,
-                                    options=[o.text for o in poll_options],
-                                    type=types.PollType.REGULAR,
-                                    )
+    # media_paths = await get_poll_path(poll_id)
 
-            await bot.send_poll(chat_id=user_id,
-                                question=poll.question,
-                                options=[o.text for o in poll_options],
-                                type=poll.type,
-                                )
+    # poll_options = [types.PollOption(text=i, voter_count=0) for i in options]
+
+    # if len(media_paths)>0:
+    #     for photo_path in media_paths:
+    #         if photo_path.lower().endswith(('.jpg', '.jpeg', '.png')):
+    #             media_type = types.InputMediaPhoto
+    #         elif photo_path.lower().endswith(('.mp4', '.avi', '.mkv')):
+    #             media_type = types.InputMediaVideo
+    #         else:
+    #             continue
+    #         photo_file = open(photo_path, 'rb')
+    #         input_media = media_type(media=types.InputFile(photo_file))
+    #         media.append(input_media)
+
+
+
+
+    #     if correct_option is not None and correct_option.isdigit():
+    #         poll = types.Poll(question=title,
+    #                         options=[o.text for o in poll_options],
+    #                         type=types.PollType.QUIZ,
+    #                         correct_option_id=int(correct_option)-1)
+
+    #         await bot.send_media_group(chat_id=user_id, media=media)
+    #         await bot.send_poll(chat_id=user_id,
+    #                             question=poll.question,
+    #                             options=[o.text for o in poll_options],
+    #                             type=poll.type,
+    #                             correct_option_id=poll.correct_option_id)
+    #     else:
+    #         poll = types.Poll(question=title,
+    #                         options=[o.text for o in poll_options],
+    #                         type=types.PollType.REGULAR,
+    #                         )
+
+    #         await bot.send_media_group(chat_id=user_id, media=media)
+    #         await bot.send_poll(chat_id=user_id,
+    #                             question=poll.question,
+    #                             options=[o.text for o in poll_options],
+    #                             type=poll.type,
+    #                             )
+    # else:
+    #     if correct_option is not None and correct_option.isdigit():
+    #         poll = types.Poll(question=title,
+    #                         options=[o.text for o in poll_options],
+    #                         type=types.PollType.QUIZ,
+    #                         correct_option_id=int(correct_option)-1)
+
+    #         await bot.send_poll(chat_id=user_id,
+    #                             question=poll.question,
+    #                             options=[o.text for o in poll_options],
+    #                             type=poll.type,
+    #                             correct_option_id=poll.correct_option_id)
+    #     else:
+    #         poll = types.Poll(question=title,
+    #                                 options=[o.text for o in poll_options],
+    #                                 type=types.PollType.REGULAR,
+    #                                 )
+
+    #         await bot.send_poll(chat_id=user_id,
+    #                             question=poll.question,
+    #                             options=[o.text for o in poll_options],
+    #                             type=poll.type,
+    #                             )
 
 
 
@@ -736,7 +757,7 @@ async def create_category_views(category_id):
 
 
 async def get_manager_with_category(product_id):
-    endpoint = f"{domen}api/users_with_category/{product_id}/"      
+    endpoint = f"{domen}api/users_with_category/{product_id}/"
 
     async with aiohttp.ClientSession() as session:
         async with session.get(endpoint) as response:
@@ -899,10 +920,34 @@ async def increment_product_manager_chat(product_id):
             else:
                 return None
 
+
+async def fetch_poll_option(option_id):
+    url = f'http://localhost:8000/api/get_poll_option/{option_id}/'
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            return await response.json()
+
+
+async def fetch_poll(poll_id):
+    url = f'http://localhost:8000/api/get_poll/{poll_id}/'
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            return await response.json()
+
+
+async def create_poll_option_user_info(option_id, bot_user_tg):
+    url = 'http://localhost:8000/api/create_option_user_info/'  # Замените на нужный URL
+
+    async with aiohttp.ClientSession() as session:
+        payload = {'option': option_id, 'bot_user_tg': bot_user_tg}
+        async with session.post(url, data=payload) as response:
+            return await response.json()
+
 async def some_async_function():
     # Ваш код, где вы хотите вызвать функцию get_categories_list()
-    a = await search_user_by_id(6006399730)
-    print(a["phone"])
+    #a = await do_poll_mailing(poll_id='1', options=[('1', 'Первый'), ('2', 'Второй')], title='Что лучше?', media_paths=[r'C:\Users\hp\Desktop\job\media\GettyImages-531906282-5eb4b86361a94e8ebb72e26dbba44aa4_AhwE7Zv.jpg'])
+    # a = await get_botusers()
+    print(await search_user_by_id(user_id='679553167'))
 
 if __name__ == "__main__":
     asyncio.run(some_async_function())

@@ -1,5 +1,5 @@
 from django.db import models
-from polls.models import Poll
+from polls.models import PollOptions, Poll
 from posts.models import Post
 from stories_news.models import StoryNews
 from products.models import Product
@@ -58,4 +58,10 @@ class KpRequest(models.Model):
     product = models.TextField()
     manager = models.CharField(max_length=32)
     bot_user = models.CharField(max_length=32)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class PollOptionUserInfo(models.Model):
+    option = models.ForeignKey(PollOptions, on_delete=models.CASCADE, related_name='statistic')
+    bot_user_tg = models.CharField(max_length=32)
     created_at = models.DateTimeField(auto_now_add=True)

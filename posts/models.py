@@ -6,7 +6,7 @@ class Post(models.Model):
     text = models.TextField(verbose_name='Текст')
     scheduled_time = models.DateTimeField(blank=True, null=True, verbose_name="Дата и время рассылки")
     approved = models.BooleanField(default=False, verbose_name='Подтверждён')
-    total_media_count = models.PositiveIntegerField(default=0, verbose_name='Сколько фотографий загрузите?')
+    # total_media_count = models.PositiveIntegerField(default=0, verbose_name='Сколько фотографий загрузите?')
     group = models.ForeignKey('bot_users.BotUserGroup', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Группа пользователей бота')
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True, verbose_name='Создано')
 

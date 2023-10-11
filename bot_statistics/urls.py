@@ -4,7 +4,8 @@ from .views import (PostUsersCountCreateView, PollUsersCountCreateView, Incremen
                     CategoryViewsCreateView, IncrementCategoryViews, ManagerChatRequestCreateView,
                     KpRequestCreateView, IncrementProductManagerChat, IncrementProductKp,
                     poll_users_count, download_excel, category_products, ProductChatCreateView,
-                    ProductKpCreateView)
+                    ProductKpCreateView, create_poll_option_user_info, poll_option_user_info_list,
+                    download_polls_excel)
 
 urlpatterns = [
     # ... Другие маршруты ...
@@ -20,9 +21,12 @@ urlpatterns = [
     path('increment_products_kp/', IncrementProductKp.as_view(), name='increment-product-kp'),
     path('create_category_views/', CategoryViewsCreateView.as_view(), name='create-category-views'),
     path('increment_category_views/', IncrementCategoryViews.as_view(), name='increment-category-views'),
+    path('create_option_user_info/', create_poll_option_user_info, name='create_option_user_info'),
     path('create_manager_request/', ManagerChatRequestCreateView.as_view(), name='create-manager-request'),
     path('create_kp_request/',KpRequestCreateView.as_view(), name='create-kp-request'),
     path('download_excel/', download_excel, name='download_excel'),
+    path('download_polls_excel/', download_polls_excel, name='download_polls_excel'),
     path('statistics/', poll_users_count, name='poll-users-count'),
     path('category_products/<int:category_id>/<str:start_date>/<str:end_date>/', category_products, name='category_products'),
+    path('poll_option_user_infos/', poll_option_user_info_list, name='poll_option_user_info_list'),
 ]

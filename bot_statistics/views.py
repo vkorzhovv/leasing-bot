@@ -16,6 +16,11 @@ from products.models import Product
 from categories.models import Category
 from stories_news.models import StoryNews
 from django.db.models import Count
+from rest_framework.decorators import api_view
+from .models import PollOptionUserInfo
+from .serializers import PollOptionUserInfoSerializer
+from django.db.models import Count, Q, F
+from polls.models import Poll, PollOptions
 
 
 class PollUsersCountCreateView(generics.CreateAPIView):
@@ -309,3 +314,127 @@ def category_products(request, category_id, start_date=None, end_date=None):
 
     context = {'product_entries': product_entries}
     return render(request, 'bot_statistics/category_products.html', context)
+
+
+
+
+@api_view(['POST'])
+def create_poll_option_user_info(request):
+    if request.method == 'POST':
+        serializer = PollOptionUserInfoSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
+def poll_option_user_info_list(request):
+    if request.user.is_authenticated:
+        start_date = request.GET.get('start_date_poll')
+        end_date = request.GET.get('end_date_poll')
+
+        if start_date and end_date:
+            start_date = make_aware(datetime.strptime(start_date, '%Y-%m-%d'))
+            end_date = make_aware(datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1))
+
+            if request.user.is_superuser:
+                polls = Poll.objects.filter(created_at__range=(start_date, end_date))
+            else:
+                polls = Poll.objects.filter(created_at__range=(start_date, end_date), user=request.user)
+
+        else:
+            if request.user.is_superuser:
+                polls = Poll.objects.all()
+            else:
+                polls = Poll.objects.filter(user=request.user)
+
+        statistics = []
+
+        for poll in polls:
+            options = PollOptions.objects.filter(poll=poll)
+            poll_statistics = []
+
+            for option in options:
+                statistic_count = PollOptionUserInfo.objects.filter(option=option).count()
+                poll_statistics.append({
+                    'option_title': option.option,
+                    'statistic_count': statistic_count
+                })
+
+            statistics.append({
+                'poll_title': poll.title,
+                'poll_statistics': poll_statistics
+            })
+
+
+        return render(request, 'bot_statistics/poll_statistics.html', {
+            'statistics': statistics
+        })
+    else:
+        return HttpResponse('Unauthorized', status=401)
+
+
+def download_polls_excel(request):
+    wb = Workbook()
+    ws = wb.active
+
+
+    bold_font = Font(bold=True)
+
+    # Добавляем заголовки для секции "Пользовательский охват опроса"
+    # ws.append(["Опрос", "Сколько пользователям отправлено"])
+
+    # Получаем данные из моделей и добавляем их в таблицу
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+
+    if start_date and end_date:
+        start_date = make_aware(datetime.strptime(start_date, '%Y-%m-%d'))
+        end_date = make_aware(datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1))
+
+        if request.user.is_superuser:
+            polls = Poll.objects.filter(created_at__range=(start_date, end_date))
+        else:
+            polls = Poll.objects.filter(created_at__range=(start_date, end_date), user=request.user)
+
+    else:
+        if request.user.is_superuser:
+            polls = Poll.objects.all()
+        else:
+            polls = Poll.objects.filter(user=request.user)
+
+    statistics = []
+
+    for poll in polls:
+        options = PollOptions.objects.filter(poll=poll)
+        poll_statistics = []
+
+        for option in options:
+            statistic_count = PollOptionUserInfo.objects.filter(option=option).count()
+            poll_statistics.append({
+                'option_title': option.option,
+                'statistic_count': statistic_count
+            })
+
+        statistics.append({
+            'poll_title': poll.title,
+            'poll_statistics': poll_statistics
+        })
+
+    for poll_stat in statistics:
+        ws.append([''])
+        ws.append([poll_stat['poll_title']])
+        for stat in poll_stat['poll_statistics']:
+            ws.append([stat['option_title'], stat['statistic_count']])
+
+    # Создаем объект BytesIO для хранения Excel-файла в памяти
+    excel_file = BytesIO()
+    wb.save(excel_file)
+    excel_file.seek(0)
+
+    # Создаем HttpResponse с содержимым Excel-файла
+    response = HttpResponse(excel_file.read(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename=statistic.xlsx'
+    return response

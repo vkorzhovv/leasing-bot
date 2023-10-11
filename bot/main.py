@@ -483,27 +483,58 @@ async def no_post_handler(callback_query: CallbackQuery, state: FSMContext):
 @dp.callback_query_handler(lambda query: query.data == 'poll', state="*")
 async def activate_user_handler(callback_query: CallbackQuery, state: FSMContext):
     user = callback_query.message['chat']['id']
-    poll = callback_query.message.text.split('\n')
-    message = callback_query.message.text.split('\n')
-    time = message[-1].split(': ')[1].split(' (')[1].split('|запланировано на ')[1][:-1]
-    await change_poll_status(poll[0].split(': ')[1])
-    if time!='None':
-        asyncio.create_task(schedule_poll_mailing(message=message, time=time))
+    poll_id = callback_query.message.text.split('\n')[0].split(': ')[1]
+    # time = message[-1].split(': ')[1].split(' (')[1].split('|запланировано на ')[1][:-1] # 2023-10-10T06:22:54Z
+    await change_poll_status(poll_id)
+    poll_info = await fetch_poll(poll_id)
+    options = poll_info['options']
+    title = poll_info['title']
+    poll_group = poll_info['poll_group']
+    media_paths = poll_info['media_paths']
+    scheduled_time = poll_info['scheduled_time']
+    manager = poll_info['manager']
+    if scheduled_time!=None:
+        asyncio.create_task(schedule_poll_mailing(poll_id=poll_id, options=options, title=title, time=scheduled_time, poll_group=poll_group, media_paths=media_paths))
     else:
-        print('check')
-        await do_poll_mailing(message)
+        await do_poll_mailing(poll_id, options, title, poll_group, media_paths)
 
-    logging.info(f"Опрос {message[0].split(': ')[1]} был одобрен на рассылку админом")
-    await bot.send_message(chat_id=user, text=f"Рассылка опроса {message[0]} одобрена!")
-    await bot.send_message(chat_id=poll[-1].split(': ')[1].split(' ')[0], text=f"Рассылка опроса {message[0].split(': ')[1]} одобрена!")
+    logging.info(f"Опрос {poll_id} был одобрен на рассылку админом")
+    await bot.send_message(chat_id=user, text=f"Рассылка опроса {poll_id} одобрена!")
+    await bot.send_message(chat_id=manager, text=f"Рассылка опроса {poll_id} одобрена!")
 
 @dp.callback_query_handler(lambda query: query.data == 'no_poll', state="*")
 async def no_post_handler(callback_query: CallbackQuery, state: FSMContext):
-    admin = callback_query.message['chat']['id']
-    message = callback_query.message.text.split('\n')
-    manager_id = message[-1].split(': ')[1].split(' ')[0]
-    logging.info(f"Опрос {message[0].split(': ')[1]} не был одобрен на рассылку админом")
-    await bot.send_message(chat_id=manager_id, text=f"Рассылка опроса {message[0].split(': ')[1]} отклонена!")
+    poll_id = callback_query.message.text.split('\n')[0].split(': ')[1]
+    poll_info = await fetch_poll(poll_id)
+    manager = poll_info['manager']
+    logging.info(f"Опрос {poll_id} не был одобрен на рассылку админом")
+    await bot.send_message(chat_id=manager, text=f"Рассылка опроса {poll_id} отклонена!")
+
+
+@dp.callback_query_handler(lambda query: re.match(r'^option_\d+$', query.data))
+async def handle_option_callback(callback_query: types.CallbackQuery):
+    option_id = int(callback_query.data.split('_')[1])
+    option_dict = await fetch_poll_option(option_id)
+    options_list = option_dict['options']
+    current_option_correct = option_dict['correct']
+
+    correct_message = option_dict['correct_message']
+    incorrect_message = option_dict['incorrect_message']
+    option_message = option_dict['option_message']
+
+    tg_username = await search_user_by_id(user_id=callback_query.message['chat']['id'])
+    await create_poll_option_user_info(option_id=option_id, bot_user_tg=tg_username['username'])
+
+
+    if all([o==False for o in options_list]):
+        await bot.send_message(chat_id=callback_query.message['chat']['id'], text=f"{option_message}")
+    elif current_option_correct==True:
+        await bot.send_message(chat_id=callback_query.message['chat']['id'], text=f"{correct_message}")
+    elif current_option_correct==False:
+        await bot.send_message(chat_id=callback_query.message['chat']['id'], text=f"{incorrect_message}")
+
+
+
 
 
 @dp.callback_query_handler(lambda query: query.data == 'storynews', state="*")
@@ -1213,7 +1244,7 @@ async def process_brand(callback_query: CallbackQuery, state: FSMContext):
             async with state.proxy() as data:
                 data['products'] = filtered_data_list
                 data['current_index'] = 0
- 
+
                 product = filtered_data_list[0]
                 await create_product_views(product["id"])
 
@@ -1339,6 +1370,3 @@ async def callback_category(callback_query: CallbackQuery, state: FSMContext):
 
 if __name__ == '__main__':
     executor.start_polling(dp,skip_updates=True)
-
-
-

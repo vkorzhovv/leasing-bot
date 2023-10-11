@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import PollUsersCount, PostUsersCount, StoryNewsViews, ProductViews, CategoryViews, ManagerChatRequest, KpRequest, ProductKp, ProductChat
+from .models import PollUsersCount, PostUsersCount, StoryNewsViews, ProductViews, CategoryViews, ManagerChatRequest, KpRequest, ProductKp, ProductChat, PollOptionUserInfo
 
 class PollUsersCountSerializer(serializers.ModelSerializer):
     class Meta:
@@ -51,3 +51,10 @@ class KpRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = KpRequest
         fields = '__all__'
+
+
+
+class PollOptionUserInfoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PollOptionUserInfo
+        fields = ['option', 'bot_user_tg', 'created_at']

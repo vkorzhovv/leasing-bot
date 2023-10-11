@@ -7,6 +7,7 @@ import requests
 from asgiref.sync import sync_to_async
 import asyncio
 
+
 async def download_photo(img_url):
     try:
         auth = aiohttp.BasicAuth(admin_username, admin_password)
@@ -108,6 +109,13 @@ async def send_post(post, media_paths=None):
 
 #POLLS -----------------------------------------------------------------------------
 
+def set_options_kb(options):
+    keyboard = InlineKeyboardMarkup(row_width=1)
+    buttons = [InlineKeyboardButton(o[1], callback_data=f'option_{o[0]}') for o in options]
+    keyboard.add(*buttons)
+
+    return keyboard
+
 def set_poll_kb():
     keyboard = InlineKeyboardMarkup()
     button1 = InlineKeyboardButton('Подтвердить', callback_data="poll")
@@ -131,93 +139,104 @@ async def get_poll_path(poll_id):
 
 
 
+async def send_poll(poll_id, options, title, time, media_paths=None):
+    if media_paths != []:
+        media = types.MediaGroup()
+        for path in media_paths:
+            media.attach_photo(types.InputFile(rf'{path}'))
 
-
-async def send_poll(poll, media_paths=None):
-    media = []
-
-    user_id = admin_id
-
-    message = poll.split('\n')
-
-    poll_id = message[0]
-    options = message[2].split(': ')[1].split(',')
-    title = message[1]
-    correct_option = message[3].split(': ')[1]
-    manager_id = message[-1]
-
-    #media_paths = await get_poll_path(poll_id)
-    poll_options = [types.PollOption(text=i, voter_count=0) for i in options]
-
-    if media_paths:
-        for photo_path in media_paths:
-            if photo_path.lower().endswith(('.jpg', '.jpeg', '.png')):
-                media_type = types.InputMediaPhoto
-            elif photo_path.lower().endswith(('.mp4', '.avi', '.mkv')):
-                media_type = types.InputMediaVideo
-            else:
-                continue
-            photo_file = open(photo_path, 'rb')
-            input_media = media_type(media=types.InputFile(photo_file))
-            media.append(input_media)
-
-
-
-        if correct_option is not None and correct_option.isdigit():
-
-            poll = types.Poll(question=title,
-                            options=[o.text for o in poll_options],
-                            type=types.PollType.QUIZ,
-                            correct_option_id=int(correct_option)-1)
-
-            await bot.send_media_group(chat_id=user_id, media=media)
-            await bot.send_poll(chat_id=user_id,
-                                question=poll.question,
-                                options=[o.text for o in poll_options],
-                                type=poll.type,
-                                correct_option_id=poll.correct_option_id)
-            await bot.send_message(user_id, f'{poll_id}\n{title}\n{message[2]}\n{message[3]}\n{message[4]}\n{manager_id}', reply_markup=set_poll_kb())
-        else:
-            poll = types.Poll(question=title,
-                            options=[o.text for o in poll_options],
-                            type=types.PollType.REGULAR,
-                            )
-
-            await bot.send_media_group(chat_id=user_id, media=media)
-            await bot.send_poll(chat_id=user_id,
-                                question=poll.question,
-                                options=[o.text for o in poll_options],
-                                type=poll.type,
-                                )
-            await bot.send_message(user_id, f'{poll_id}\n{title}\n{message[2]}\n{message[3]}\n{message[4]}\n{manager_id}', reply_markup=set_poll_kb())
-
-
+        await bot.send_media_group(admin_id, media=media)
+    await bot.send_message(admin_id, f'{title}', reply_markup=set_options_kb(options))
+    if time!=None:
+        await bot.send_message(admin_id, f'Опрос: {poll_id}\nЗапланирован на: {time}', reply_markup=set_poll_kb())
     else:
-        if correct_option is not None and correct_option.isdigit():
+        await bot.send_message(admin_id, f'Опрос: {poll_id}', reply_markup=set_poll_kb())
 
-            poll = types.Poll(question=title,
-                            options=[o.text for o in poll_options],
-                            type=types.PollType.QUIZ,
-                            correct_option_id=int(correct_option)-1)
+# async def send_poll(poll, media_paths=None):
+#     media = []
 
-            await bot.send_poll(chat_id=user_id,
-                                question=poll.question,
-                                options=[o.text for o in poll_options],
-                                type=poll.type,
-                                correct_option_id=poll.correct_option_id)
-            await bot.send_message(user_id, f'{poll_id}\n{title}\n{message[2]}\n{message[3]}\n{message[4]}\n{manager_id}', reply_markup=set_poll_kb())
-        else:
-            poll = types.Poll(question=title,
-                            options=[o.text for o in poll_options],
-                            type=types.PollType.REGULAR,
-                            )
+#     user_id = admin_id
 
-            await bot.send_poll(chat_id=user_id,
-                                question=poll.question,
-                                options=[o.text for o in poll_options],
-                                type=poll.type,
-                                )
-            await bot.send_message(user_id, f'{poll_id}\n{title}\n{message[2]}\n{message[3]}\n{message[4]}\n{manager_id}', reply_markup=set_poll_kb())
+#     message = poll.split('\n')
+
+#     poll_id = message[0]
+#     options = message[2].split(': ')[1].split(',')
+#     title = message[1]
+#     correct_option = message[3].split(': ')[1]
+#     manager_id = message[-1]
+
+#     #media_paths = await get_poll_path(poll_id)
+#     poll_options = [types.PollOption(text=i, voter_count=0) for i in options]
+
+#     if media_paths:
+#         for photo_path in media_paths:
+#             if photo_path.lower().endswith(('.jpg', '.jpeg', '.png')):
+#                 media_type = types.InputMediaPhoto
+#             elif photo_path.lower().endswith(('.mp4', '.avi', '.mkv')):
+#                 media_type = types.InputMediaVideo
+#             else:
+#                 continue
+#             photo_file = open(photo_path, 'rb')
+#             input_media = media_type(media=types.InputFile(photo_file))
+#             media.append(input_media)
+
+
+
+#         if correct_option is not None and correct_option.isdigit():
+
+#             poll = types.Poll(question=title,
+#                             options=[o.text for o in poll_options],
+#                             type=types.PollType.QUIZ,
+#                             correct_option_id=int(correct_option)-1)
+
+#             await bot.send_media_group(chat_id=user_id, media=media)
+#             await bot.send_poll(chat_id=user_id,
+#                                 question=poll.question,
+#                                 options=[o.text for o in poll_options],
+#                                 type=poll.type,
+#                                 correct_option_id=poll.correct_option_id)
+#             await bot.send_message(user_id, f'{poll_id}\n{title}\n{message[2]}\n{message[3]}\n{message[4]}\n{manager_id}', reply_markup=set_poll_kb())
+#         else:
+#             poll = types.Poll(question=title,
+#                             options=[o.text for o in poll_options],
+#                             type=types.PollType.REGULAR,
+#                             )
+
+#             await bot.send_media_group(chat_id=user_id, media=media)
+#             await bot.send_poll(chat_id=user_id,
+#                                 question=poll.question,
+#                                 options=[o.text for o in poll_options],
+#                                 type=poll.type,
+#                                 )
+#             await bot.send_message(user_id, f'{poll_id}\n{title}\n{message[2]}\n{message[3]}\n{message[4]}\n{manager_id}', reply_markup=set_poll_kb())
+
+
+#     else:
+#         if correct_option is not None and correct_option.isdigit():
+
+#             poll = types.Poll(question=title,
+#                             options=[o.text for o in poll_options],
+#                             type=types.PollType.QUIZ,
+#                             correct_option_id=int(correct_option)-1)
+
+#             await bot.send_poll(chat_id=user_id,
+#                                 question=poll.question,
+#                                 options=[o.text for o in poll_options],
+#                                 type=poll.type,
+#                                 correct_option_id=poll.correct_option_id)
+#             await bot.send_message(user_id, f'{poll_id}\n{title}\n{message[2]}\n{message[3]}\n{message[4]}\n{manager_id}', reply_markup=set_poll_kb())
+#         else:
+#             poll = types.Poll(question=title,
+#                             options=[o.text for o in poll_options],
+#                             type=types.PollType.REGULAR,
+#                             )
+
+#             await bot.send_poll(chat_id=user_id,
+#                                 question=poll.question,
+#                                 options=[o.text for o in poll_options],
+#                                 type=poll.type,
+#                                 )
+#             await bot.send_message(user_id, f'{poll_id}\n{title}\n{message[2]}\n{message[3]}\n{message[4]}\n{manager_id}', reply_markup=set_poll_kb())
 
 
 
