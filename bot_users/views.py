@@ -241,7 +241,7 @@ class UsersWithCategoryAPIView(APIView):
             users_with_category = ExtendedUser.objects.filter(category=product_category)
 
             # Сериализуем пользователей (при необходимости)
-            serialized_users = [{'username': user.user.username, 'category': product_category.name, 'telegram_username': user.bot_user.username} for user in users_with_category]
+            serialized_users = [{'username': user.user.username, 'category': product_category.name, 'telegram_username': user.bot_user.username, 'telegram_id': user.bot_user.user_id} for user in users_with_category]
 
             return Response(serialized_users, status=status.HTTP_200_OK)
 

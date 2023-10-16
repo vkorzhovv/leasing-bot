@@ -764,7 +764,7 @@ async def get_manager_with_category(product_id):
             if response.status == 200:
                 data = await response.json()
                 if data:
-                    return data[0]['telegram_username']
+                    return data#[0]['telegram_username']
                 else:
                     return admin_tg
             else:
@@ -922,21 +922,21 @@ async def increment_product_manager_chat(product_id):
 
 
 async def fetch_poll_option(option_id):
-    url = f'http://localhost:8000/api/get_poll_option/{option_id}/'
+    url = f'{domen}api/get_poll_option/{option_id}/'
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
             return await response.json()
 
 
 async def fetch_poll(poll_id):
-    url = f'http://localhost:8000/api/get_poll/{poll_id}/'
+    url = f'{domen}api/get_poll/{poll_id}/'
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
             return await response.json()
 
 
 async def create_poll_option_user_info(option_id, bot_user_tg):
-    url = 'http://localhost:8000/api/create_option_user_info/'  # Замените на нужный URL
+    url = f'{domen}api/create_option_user_info/'  # Замените на нужный URL
 
     async with aiohttp.ClientSession() as session:
         payload = {'option': option_id, 'bot_user_tg': bot_user_tg}
@@ -947,7 +947,7 @@ async def some_async_function():
     # Ваш код, где вы хотите вызвать функцию get_categories_list()
     #a = await do_poll_mailing(poll_id='1', options=[('1', 'Первый'), ('2', 'Второй')], title='Что лучше?', media_paths=[r'C:\Users\hp\Desktop\job\media\GettyImages-531906282-5eb4b86361a94e8ebb72e26dbba44aa4_AhwE7Zv.jpg'])
     # a = await get_botusers()
-    print(await search_user_by_id(user_id='679553167'))
+    print(await get_manager_with_category('1'))
 
 if __name__ == "__main__":
     asyncio.run(some_async_function())
