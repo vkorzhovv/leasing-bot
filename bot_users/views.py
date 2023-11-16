@@ -1,6 +1,6 @@
 from rest_framework.generics import CreateAPIView, ListAPIView
 from .models import BotUser, BotUserGroup, ExtendedUser
-from .serializers import BotUserSerializer, ActivateUserSerializer, ManagerRegistrationSerializer, BotUserExistsSerializer
+from .serializers import BotUserSerializer, ActivateUserSerializer, UserSerializer, ManagerRegistrationSerializer, BotUserExistsSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -27,6 +27,7 @@ from datetime import datetime
 from datetime import timedelta
 from django.contrib import messages
 from django.shortcuts import render, redirect
+from django.contrib.auth.models import AbstractUser, User
 
 
 from .models import User  # Импортируйте вашу модель User
@@ -49,6 +50,14 @@ class BotUserCreateView(CreateAPIView):
     permission_classes = [IsStaffAndSuperuser]
     queryset = BotUser.objects.all()
     serializer_class = BotUserSerializer
+
+
+class ProductManagerListView(generics.ListAPIView):
+    serializer_class = UserSerializer
+    permission_classes = [IsStaffAndSuperuser]
+
+    def get_queryset(self):
+        return User.objects.filter(extended_user__product_manager=True)
 
 
 class ActivateUserView(APIView):
@@ -133,22 +142,26 @@ def manager_results(request):
 
             results = {}
 
-            for manager_id in selected_managers:
-                manager = User.objects.get(pk=manager_id)
-                results[manager.username] = {
-                    'approved_posts': get_approved_posts_of_manager(manager, start_date, end_date),
-                    'not_approved_posts': get_not_approved_posts_of_manager(manager, start_date, end_date),
-                    'approved_polls': get_approved_polls_of_manager(manager, start_date, end_date),
-                    'not_approved_polls': get_not_approved_polls_of_manager(manager, start_date, end_date),
-                    'approved_news': get_approved_news_of_manager(manager, start_date, end_date),
-                    'not_approved_news': get_not_approved_news_of_manager(manager, start_date, end_date),
-                    'approved_stories': get_approved_stories_of_manager(manager, start_date, end_date),
-                    'not_approved_stories': get_not_approved_stories_of_manager(manager, start_date, end_date),
-                    'requests_for_chat': get_chat_requests_of_manager(manager.username, start_date, end_date),
-                    'requests_for_kp': get_kp_requests_of_manager(manager.username, start_date, end_date),
-                }
+            try:
+                for manager_id in selected_managers:
+                    manager = User.objects.get(pk=manager_id)
+                    results[manager.username] = {
+                        'approved_posts': get_approved_posts_of_manager(manager, start_date, end_date),
+                        'not_approved_posts': get_not_approved_posts_of_manager(manager, start_date, end_date),
+                        'approved_polls': get_approved_polls_of_manager(manager, start_date, end_date),
+                        'not_approved_polls': get_not_approved_polls_of_manager(manager, start_date, end_date),
+                        'approved_news': get_approved_news_of_manager(manager, start_date, end_date),
+                        'not_approved_news': get_not_approved_news_of_manager(manager, start_date, end_date),
+                        'approved_stories': get_approved_stories_of_manager(manager, start_date, end_date),
+                        'not_approved_stories': get_not_approved_stories_of_manager(manager, start_date, end_date),
+                        'requests_for_chat': get_chat_requests_of_manager(manager.username, start_date, end_date),
+                        'requests_for_kp': get_kp_requests_of_manager(manager.username, start_date, end_date),
+                    }
 
-            return render(request, 'bot_users/manager_results.html', {'results': results})
+                return render(request, 'bot_users/manager_results.html', {'results': results})
+
+            except (AttributeError, ExtendedUser.DoesNotExist):
+                return HttpResponse("Свяжите выбранного менеджера с пользователем бота (поле 'Телеграм-пользователь менеджера')")
 
     elif action == 'download_excel':
         selected_managers = request.POST.getlist('managers')
@@ -162,43 +175,48 @@ def manager_results(request):
         end_date = make_aware(datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1))
         results = []
 
-        for manager_id in selected_managers:
-            manager = User.objects.get(pk=manager_id)
-            manager_data = {
-                'username': manager.username,
-                'approved_posts': get_approved_posts_of_manager(manager, start_date, end_date),
-                'not_approved_posts': get_not_approved_posts_of_manager(manager, start_date, end_date),
-                'approved_polls': get_approved_polls_of_manager(manager, start_date, end_date),
-                'not_approved_polls': get_not_approved_polls_of_manager(manager, start_date, end_date),
-                'approved_news': get_approved_news_of_manager(manager, start_date, end_date),
-                'not_approved_news': get_not_approved_news_of_manager(manager, start_date, end_date),
-                'approved_stories': get_approved_stories_of_manager(manager, start_date, end_date),
-                'not_approved_stories': get_not_approved_stories_of_manager(manager, start_date, end_date),
-                'requests_for_chat': get_chat_requests_of_manager(manager.username, start_date, end_date),
-                'requests_for_kp': get_kp_requests_of_manager(manager.username, start_date, end_date),
-            }
-            results.append(manager_data)
+        try:
+            for manager_id in selected_managers:
+                manager = User.objects.get(pk=manager_id)
+                manager_data = {
+                    'username': manager.username,
+                    'approved_posts': get_approved_posts_of_manager(manager, start_date, end_date),
+                    'not_approved_posts': get_not_approved_posts_of_manager(manager, start_date, end_date),
+                    'approved_polls': get_approved_polls_of_manager(manager, start_date, end_date),
+                    'not_approved_polls': get_not_approved_polls_of_manager(manager, start_date, end_date),
+                    'approved_news': get_approved_news_of_manager(manager, start_date, end_date),
+                    'not_approved_news': get_not_approved_news_of_manager(manager, start_date, end_date),
+                    'approved_stories': get_approved_stories_of_manager(manager, start_date, end_date),
+                    'not_approved_stories': get_not_approved_stories_of_manager(manager, start_date, end_date),
+                    'requests_for_chat': get_chat_requests_of_manager(manager.username, start_date, end_date),
+                    'requests_for_kp': get_kp_requests_of_manager(manager.username, start_date, end_date),
+                }
+                results.append(manager_data)
 
-        # Create a new Excel workbook and add a worksheet
-        output = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        output['Content-Disposition'] = 'attachment; filename="manager_results.xlsx"'
-        workbook = xlsxwriter.Workbook(output, {'in_memory': True})
-        worksheet = workbook.add_worksheet()
+            # Create a new Excel workbook and add a worksheet
+            output = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            output['Content-Disposition'] = 'attachment; filename="manager_results.xlsx"'
+            workbook = xlsxwriter.Workbook(output, {'in_memory': True})
+            worksheet = workbook.add_worksheet()
 
-        # Add headers
-        headers = list(results[0].keys())
-        for col_num, header in enumerate(headers):
-            worksheet.write(0, col_num, header)
+            # Add headers
+            headers = list(results[0].keys())
+            for col_num, header in enumerate(headers):
+                worksheet.write(0, col_num, header)
 
-        # Add data
-        for row_num, data in enumerate(results, start=1):
-            for col_num, value in enumerate(data.values()):
-                worksheet.write(row_num, col_num, value)
+            # Add data
+            for row_num, data in enumerate(results, start=1):
+                for col_num, value in enumerate(data.values()):
+                    worksheet.write(row_num, col_num, value)
 
-        # Close the Excel workbook
-        workbook.close()
+            # Close the Excel workbook
+            workbook.close()
 
-        return output
+            return output
+
+        except (AttributeError, ExtendedUser.DoesNotExist):
+                return HttpResponse("Свяжите выбранного менеджера с пользователем бота (поле 'Телеграм-пользователь менеджера')")
+
 
 
     managers = User.objects.filter(is_staff=True)

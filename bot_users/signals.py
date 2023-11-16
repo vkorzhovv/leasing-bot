@@ -9,5 +9,8 @@ def bot_user_manager_changed(sender, instance, **kwargs):
     if instance.id is not None:
         previous = BotUser.objects.get(id=instance.id)
         if not previous.manager and instance.manager:
-            register_manager_sync = async_to_sync(register_manager)
-            register_manager_sync(instance.user_id)
+            if instance.username!=None:
+                register_manager_sync = async_to_sync(register_manager)
+                register_manager_sync(instance.user_id)
+            else:
+                instance.manager=False

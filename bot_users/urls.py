@@ -14,4 +14,5 @@ urlpatterns = [
     path('botusers/<str:user_id>/update_city/', BotUserCityUpdateView.as_view(), name='update-city'),
     path('bot_user/search/<str:username>/', BotUserSearchView.as_view(), name='bot-user-search'),
     path('bot_user_id/search/<str:user_id>/', BotUserSearchByIdView.as_view(), name='bot-user-search_by_id'),
+    path('product_managers/', ProductManagerListView.as_view(), name='product-managers-list'),
 ]

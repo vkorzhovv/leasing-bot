@@ -57,3 +57,32 @@ class BotUserSearchSerializer(serializers.ModelSerializer):
     class Meta:
         model = BotUser
         fields = ('user_id', 'username', 'phone')
+
+
+class UserSerializer(serializers.ModelSerializer):
+
+    phone = serializers.SerializerMethodField()
+    username = serializers.SerializerMethodField()
+    user_id = serializers.SerializerMethodField()
+
+    def get_phone(self, obj):
+        try:
+            return obj.extended_user.bot_user.phone
+        except AttributeError:
+            return None
+
+    def get_username(self, obj):
+        try:
+            return obj.extended_user.bot_user.username
+        except AttributeError:
+            return None
+
+    def get_user_id(self, obj):
+        try:
+            return obj.extended_user.bot_user.user_id
+        except AttributeError:
+            return None
+
+    class Meta:
+        model = User
+        fields = ('username', 'phone', 'user_id')

@@ -5,11 +5,13 @@ import json
 import requests
 from faker import Faker
 from aiogram import Bot,types
-from bot import storage, bot, dp, TOKEN, admin_username, admin_password, domen, admin_tg
+from bot import storage, bot, dp, TOKEN, admin_username, admin_password, domen, admin_tg, admin_id
 import datetime
 from dateutil.parser import parse
 import datetime
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup
+import logging
+import random
 
 
 def set_options_kb(options):
@@ -932,7 +934,12 @@ async def fetch_poll(poll_id):
     url = f'{domen}api/get_poll/{poll_id}/'
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
-            return await response.json()
+            try:
+                return await response.json()
+            except:
+                print('Ошибка: Свяжите пользователя джанго с пользователем бота (поле "Телеграм-пользователь менеджера")')
+                logging.info('Ошибка: Свяжите пользователя джанго с пользователем бота (поле "Телеграм-пользователь менеджера")')
+
 
 
 async def create_poll_option_user_info(option_id, bot_user_tg):
@@ -943,11 +950,29 @@ async def create_poll_option_user_info(option_id, bot_user_tg):
         async with session.post(url, data=payload) as response:
             return await response.json()
 
+
+async def get_product_managers():
+    url = f"{domen}api/product_managers/"
+    auth = aiohttp.BasicAuth(admin_username, admin_password)
+    
+    async with aiohttp.ClientSession(auth=auth) as session:
+        async with session.get(url) as response:
+            if response.status == 200:
+                data = await response.json()
+                try:
+                    data = random.choice(data)
+                except:
+                    data = {'username': admin_tg, 'user_id': admin_id}
+                return data
+            else:
+                return None
+
+
 async def some_async_function():
     # Ваш код, где вы хотите вызвать функцию get_categories_list()
     #a = await do_poll_mailing(poll_id='1', options=[('1', 'Первый'), ('2', 'Второй')], title='Что лучше?', media_paths=[r'C:\Users\hp\Desktop\job\media\GettyImages-531906282-5eb4b86361a94e8ebb72e26dbba44aa4_AhwE7Zv.jpg'])
     # a = await get_botusers()
-    print(await get_manager_with_category('1'))
+    print(await get_product_managers())
 
 if __name__ == "__main__":
     asyncio.run(some_async_function())

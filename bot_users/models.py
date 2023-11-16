@@ -41,3 +41,4 @@ class ExtendedUser(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='extended_user')
     bot_user = models.ForeignKey(BotUser, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Телеграм-пользователь менеджера')
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, blank=True, null=True, verbose_name='Категория менеджера')
+    product_manager = models.BooleanField("Менеджер по поиску товаров", default=False)

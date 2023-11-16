@@ -7,6 +7,7 @@ from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
 from import_export.formats.base_formats import DEFAULT_FORMATS
 from products.formats import XML
+from django.contrib import messages
 
 
 
@@ -17,6 +18,13 @@ class BotUserAdmin(ExportActionModelAdmin):
     list_filter = ('phone', 'activated')
     search_fields = ('name', 'company_name', 'phone')
     ordering = ('-created_at',)
+
+
+    def save_model(self, request, obj, form, change):
+        username = form.cleaned_data.get('username', None)
+        if 'manager' in form.changed_data and form.cleaned_data['manager'] and username==None:
+            messages.add_message(request, messages.ERROR, 'Поле "Телеграм-юзернейм" пустое, менеджер не создан!')
+        super(BotUserAdmin, self).save_model(request, obj, form, change)
 
 
     def display_groups(self, obj):
@@ -43,6 +51,7 @@ class ExtendedUserInline(admin.StackedInline):
     can_delete = False
 
 
+
 class CustomUserAdmin(UserAdmin):
     list_display = ('username', 'email', 'is_staff', 'is_superuser', 'bot_user_info', 'bot_user_id_info', 'bot_user_category')
 
@@ -59,6 +68,11 @@ class CustomUserAdmin(UserAdmin):
             return 'None'
 
     inlines = [ExtendedUserInline]
+
+
+
+
+
 
 admin.site.unregister(User)
 admin.site.register(User, CustomUserAdmin)
