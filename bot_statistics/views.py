@@ -315,7 +315,7 @@ def category_products(request, category_id, start_date=None, end_date=None):
     context = {'product_entries': product_entries}
     return render(request, 'bot_statistics/category_products.html', context)
 
-
+ 
 
 
 @api_view(['POST'])

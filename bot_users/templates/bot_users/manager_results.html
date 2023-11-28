@@ -52,7 +52,7 @@
     <h1>Статистика по менеджерам</h1>
     <table>
         <tr>
-            <th>Менеджер</th>
+            <th>Менеджер ({{results.category}})</th>
             <th>Подтверждённые посты</th>
             <th>Неподтверждённые посты</th>
             <th>Подтверждённые опросы</th>
@@ -61,11 +61,12 @@
             <th>Неподтверждённые Новости</th>
             <th>Подтверждённое Актуальное</th>
             <th>Неподтверждённые Актуальное</th>
-            <th>Запросы на чат с менеджером от пользователей</th>
+            <th>Запросы на чат с менеджером</th>
             <th>Запросы на КП от пользователей</th>
         </tr>
         {% for username, result in results.items %}
             <tr>
+                {% if username != 'category' %}
                 <td>{{ username }}</td>
                 <td>{{ result.approved_posts }}</td>
                 <td>{{ result.not_approved_posts }}</td>
@@ -77,6 +78,7 @@
                 <td>{{ result.not_approved_stories }}</td>
                 <td>{{ result.requests_for_chat }}</td>
                 <td>{{ result.requests_for_kp }}</td>
+                {% endif %}
             </tr>
         {% endfor %}
     </table>

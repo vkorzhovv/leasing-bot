@@ -548,8 +548,13 @@ async def handle_option_callback(callback_query: types.CallbackQuery):
     incorrect_message = option_dict['incorrect_message']
     option_message = option_dict['option_message']
 
-    tg_username = await search_user_by_id(user_id=callback_query.message['chat']['id'])
-    await create_poll_option_user_info(option_id=option_id, bot_user_tg=tg_username['username'])
+    if str(admin_id)!=str(callback_query.message['chat']['id']):
+        tg_username = await search_user_by_id(user_id=callback_query.message['chat']['id'])
+        await create_poll_option_user_info(option_id=option_id, bot_user_tg=tg_username['username'])
+
+        await bot.edit_message_reply_markup(chat_id=callback_query.message['chat']['id'],
+                                        message_id=callback_query.message.message_id,
+                                        reply_markup=None)
 
 
     if all([o==False for o in options_list]):
@@ -558,6 +563,9 @@ async def handle_option_callback(callback_query: types.CallbackQuery):
         await bot.send_message(chat_id=callback_query.message['chat']['id'], text=f"{correct_message}")
     elif current_option_correct==False:
         await bot.send_message(chat_id=callback_query.message['chat']['id'], text=f"{incorrect_message}")
+
+
+
 
 
 
@@ -814,7 +822,7 @@ async def callback_chat_with_manager(callback_query: CallbackQuery):
         manager = product_managers[current_manager_index]
         manager_phone = await search_user_by_id(manager['telegram_id'])
         tg_username = f"@{manager['telegram_username']}" if manager['telegram_username'] is not None else manager_phone['phone']
-        await create_manager_request(product=f'{product} {product_link}', bot_user=bot_user, manager=tg_username)
+        await create_manager_request(product=f'{product} {product_link}', bot_user=bot_user, manager=manager['username'])
         MESSAGES = await get_commands_list()
         if 'manager_chat_user' in MESSAGES:
             print(await send_photo_with_url(TOKEN=TOKEN, CHAT_ID=str(callback_query.from_user.id), img_url=MESSAGES['manager_chat_user'][1], caption=MESSAGES['manager_chat_user'][0].replace('<p>', '').replace('</p>', '').replace('<br />', '')+f'\n{tg_username}', parse_mode=types.ParseMode.HTML, message=callback_query))
@@ -865,14 +873,14 @@ async def callback_kp_request(callback_query: CallbackQuery):
     manager_phone = await search_user_by_id(int(manager['telegram_id']))
     tg_username = f"@{manager['telegram_username']}" if manager['telegram_username'] is not None else manager_phone['phone']
     await create_product_kp(str(product_id))
-    MESSAGES = await get_commands_list()
-    # await create_profile(user_id=message.from_user.id)
-    if 'kp_sent_message' in MESSAGES:
-        await send_photo_with_url(TOKEN=TOKEN, CHAT_ID=str(callback_query.from_user.id), img_url=MESSAGES['kp_sent_message'][1], caption=MESSAGES['kp_sent_message'][0].replace('<p>', '').replace('</p>', '').replace('<br />', '')+f'\nМенеджер: {tg_username}', parse_mode=types.ParseMode.HTML, message=callback_query)
-    else:
-        await create_command(key='kp_sent_message', text='Запрос сформирован, скоро с Вами свяжутся')
-        MESSAGES = await get_commands_list()
-        await send_photo_with_url(TOKEN=TOKEN, CHAT_ID=str(callback_query.from_user.id), img_url=MESSAGES['kp_sent_message'][1], caption=MESSAGES['kp_sent_message'][0].replace('<p>', '').replace('</p>', '').replace('<br />', '')+f'\nМенеджер: {tg_username}', parse_mode=types.ParseMode.HTML, message=callback_query)
+    # MESSAGES = await get_commands_list()
+    # # await create_profile(user_id=message.from_user.id)
+    # if 'kp_sent_message' in MESSAGES:
+    #     await send_photo_with_url(TOKEN=TOKEN, CHAT_ID=str(callback_query.from_user.id), img_url=MESSAGES['kp_sent_message'][1], caption=MESSAGES['kp_sent_message'][0].replace('<p>', '').replace('</p>', '').replace('<br />', '')+f'\nМенеджер: {tg_username}', parse_mode=types.ParseMode.HTML, message=callback_query)
+    # else:
+    #     await create_command(key='kp_sent_message', text='Запрос сформирован, скоро с Вами свяжутся')
+    #     MESSAGES = await get_commands_list()
+    #     await send_photo_with_url(TOKEN=TOKEN, CHAT_ID=str(callback_query.from_user.id), img_url=MESSAGES['kp_sent_message'][1], caption=MESSAGES['kp_sent_message'][0].replace('<p>', '').replace('</p>', '').replace('<br />', '')+f'\nМенеджер: {tg_username}', parse_mode=types.ParseMode.HTML, message=callback_query)
     user = callback_query.from_user.id
     path = await get_kp_path(product_id)
     phone = await search_user_by_id(user)
@@ -882,7 +890,7 @@ async def callback_kp_request(callback_query: CallbackQuery):
     else:
         await bot.send_message(callback_query.from_user.id, 'Менеджер скоро с вами свяжется')
     product_link = f"{domen}admin/products/product/{product_id}/change/"
-    await create_kp_request(product=f'{product} {product_link}', bot_user=user, manager=tg_username)
+    await create_kp_request(product=f'{product} {product_link}', bot_user=user, manager=manager['username'])
     try:
         # d = await search_manager_id(manager_telegram_username)
         await bot.send_message(int(manager['telegram_id']), f"{text}\nЗапросил КП: @{callback_query.from_user.username}\nТелефон: {phone['phone']}")

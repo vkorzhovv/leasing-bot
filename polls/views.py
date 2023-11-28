@@ -7,6 +7,11 @@ from rest_framework.decorators import api_view
 from src.permissions import IsStaffAndSuperuser
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from django.contrib.contenttypes.models import ContentType
+
 
 class ApprovePoll(APIView):
     permission_classes = [IsStaffAndSuperuser]
@@ -60,3 +65,15 @@ def get_poll(request, poll_id):
 
     }
     return JsonResponse(response_data)
+
+
+
+class CheckPollExistenceView(APIView):
+    def get(self, request, poll_id):
+        try:
+            obj = Poll.objects.get(id=int(poll_id))
+            return Response({'exists': True}, status=status.HTTP_200_OK)
+        except Poll.DoesNotExist:
+            return Response({'exists': False}, status=status.HTTP_404_NOT_FOUND)
+
+    

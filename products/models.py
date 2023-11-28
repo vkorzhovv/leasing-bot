@@ -97,7 +97,7 @@ class Product(models.Model):
             parsed_url = urlparse(download_url)
             filename = unquote(parsed_url.query.split("&filename=")[1].split("&")[0])
             download_response = requests.get(download_url)
-            file_content = download_response.content
+            file_content = download_response.ContentTypes
 
             temp_file = File(io.BytesIO(file_content), name=filename)
             self.kp = temp_file

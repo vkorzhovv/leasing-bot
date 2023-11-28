@@ -267,15 +267,6 @@ async def send_last_interaction(user_id):
                 response_text = await response.text()
 
 
-# async def register_manager(CHAT_ID: str):
-#     fake = Faker()
-
-#     username = fake.user_name()
-#     password = fake.password()
-
-#     await bot.send_message(CHAT_ID, f'username: {username}\npassword: {password}\nadmin-panel: http://localhost:8000/admin', reply_markup=set_manager_kb())
-
-
 
 async def save_manager(username, password, bot_user_id):
     url = f'{domen}api/register/'
@@ -328,10 +319,21 @@ async def change_post_status(post_id):
                 return None
 
 
+async def check_post_exist(post_id):
+    url = f'{domen}api/check_post_exist/{post_id}/'
+    auth = aiohttp.BasicAuth(admin_username, admin_password)
+
+    async with aiohttp.ClientSession(auth=auth) as session:
+        async with session.get(url) as response:
+            data_list = await response.json()
+            return data_list['exists']
+
+
+
 async def do_mailing(post):
     try:
-        if post[2].split(': ')[1].isdigit():
-            users = await get_botusers(post[2].split(': ')[1])
+        if post[-2].split(': ')[1].isdigit():
+            users = await get_botusers(post[-2].split(': ')[1])
             await post_post_users_count(post[0].split(': ')[1], len(users))
         else:
             users = await get_botusers()
@@ -339,11 +341,14 @@ async def do_mailing(post):
     except:
         users = await get_botusers()
         await post_post_users_count(post[0].split(': ')[1], len(users))
-    for user in users:
-        try:
-            await send_post(user, post)
-        except:
-            None
+
+    exists = await check_post_exist(post[0].split(': ')[1])
+    if exists:
+        for user in users:
+            try:
+                await send_post(user, post)
+            except:
+                None
 
 
 async def schedule_mailing(message, time):
@@ -362,6 +367,7 @@ async def schedule_mailing(message, time):
     await asyncio.sleep(time_difference)
 
     # Вызываем асинхронную функцию для рассылки
+
     await do_mailing(message)
 
 
@@ -381,6 +387,8 @@ async def get_post_path(post_id):
 async def send_post(user_id, message):
 
     post_id = message[0].split(': ')[1]
+    text = message[1].split(': ')[1] + '\n' + '\n'.join(message[2:-2])
+
 
 
 
@@ -400,13 +408,14 @@ async def send_post(user_id, message):
             input_media = media_type(media=types.InputFile(photo_file))
             media.append(input_media)
 
-
-        media[0]["caption"] = message[1].split(': ')[1]
+        
+    
+        media[0]["caption"] = text
 
         await bot.send_media_group(chat_id=user_id, media=media)
         photo_file.close()
     else:
-        await bot.send_message(user_id, message[1].split(': ')[1])
+        await bot.send_message(user_id, text)
 
 
 
@@ -439,6 +448,16 @@ async def change_poll_status(poll_id):
                 return None
 
 
+async def check_poll_exist(poll_id):
+    url = f'{domen}api/check_poll_exist/{poll_id}/'
+    auth = aiohttp.BasicAuth(admin_username, admin_password)
+
+    async with aiohttp.ClientSession(auth=auth) as session:
+        async with session.get(url) as response:
+            data_list = await response.json()
+            return data_list['exists']
+
+
 async def do_poll_mailing(poll_id, options, title, poll_group=None, media_paths=None):
     #poll_id = poll[0].split(': ')[1]
 
@@ -453,12 +472,13 @@ async def do_poll_mailing(poll_id, options, title, poll_group=None, media_paths=
     # except:
     #     users = await get_botusers()
     #     await post_poll_users_count(poll_id=poll_id, users_count=len(users))
-    print(users)
-    for user in users:
-        try:
-            await send_poll(user, options, title, media_paths)
-        except:
-            None
+    exists = await check_poll_exist(poll_id)
+    if exists:
+        for user in users:
+            try:
+                await send_poll(user, options, title, media_paths)
+            except:
+                None
 
 
 async def schedule_poll_mailing(poll_id, options, title, time, poll_group=None, media_paths=None):
@@ -489,83 +509,6 @@ async def send_poll(user, options, title, media_paths=None):
 
         await bot.send_media_group(user, media=media)
     await bot.send_message(user, f'{title}', reply_markup=set_options_kb(options))
-
-# async def send_poll(user_id, message):
-    # media = []
-
-    # poll_id = message[0].split(': ')[1]
-    # options = message[2].split(': ')[1].split(',')
-    # title = message[1].split(': ')[1]
-    # correct_option = message[3].split(': ')[1]
-
-    # media_paths = await get_poll_path(poll_id)
-
-    # poll_options = [types.PollOption(text=i, voter_count=0) for i in options]
-
-    # if len(media_paths)>0:
-    #     for photo_path in media_paths:
-    #         if photo_path.lower().endswith(('.jpg', '.jpeg', '.png')):
-    #             media_type = types.InputMediaPhoto
-    #         elif photo_path.lower().endswith(('.mp4', '.avi', '.mkv')):
-    #             media_type = types.InputMediaVideo
-    #         else:
-    #             continue
-    #         photo_file = open(photo_path, 'rb')
-    #         input_media = media_type(media=types.InputFile(photo_file))
-    #         media.append(input_media)
-
-
-
-
-    #     if correct_option is not None and correct_option.isdigit():
-    #         poll = types.Poll(question=title,
-    #                         options=[o.text for o in poll_options],
-    #                         type=types.PollType.QUIZ,
-    #                         correct_option_id=int(correct_option)-1)
-
-    #         await bot.send_media_group(chat_id=user_id, media=media)
-    #         await bot.send_poll(chat_id=user_id,
-    #                             question=poll.question,
-    #                             options=[o.text for o in poll_options],
-    #                             type=poll.type,
-    #                             correct_option_id=poll.correct_option_id)
-    #     else:
-    #         poll = types.Poll(question=title,
-    #                         options=[o.text for o in poll_options],
-    #                         type=types.PollType.REGULAR,
-    #                         )
-
-    #         await bot.send_media_group(chat_id=user_id, media=media)
-    #         await bot.send_poll(chat_id=user_id,
-    #                             question=poll.question,
-    #                             options=[o.text for o in poll_options],
-    #                             type=poll.type,
-    #                             )
-    # else:
-    #     if correct_option is not None and correct_option.isdigit():
-    #         poll = types.Poll(question=title,
-    #                         options=[o.text for o in poll_options],
-    #                         type=types.PollType.QUIZ,
-    #                         correct_option_id=int(correct_option)-1)
-
-    #         await bot.send_poll(chat_id=user_id,
-    #                             question=poll.question,
-    #                             options=[o.text for o in poll_options],
-    #                             type=poll.type,
-    #                             correct_option_id=poll.correct_option_id)
-    #     else:
-    #         poll = types.Poll(question=title,
-    #                                 options=[o.text for o in poll_options],
-    #                                 type=types.PollType.REGULAR,
-    #                                 )
-
-    #         await bot.send_poll(chat_id=user_id,
-    #                             question=poll.question,
-    #                             options=[o.text for o in poll_options],
-    #                             type=poll.type,
-    #                             )
-
-
 
 
 #storynews change approved
@@ -969,10 +912,7 @@ async def get_product_managers():
 
 
 async def some_async_function():
-    # Ваш код, где вы хотите вызвать функцию get_categories_list()
-    #a = await do_poll_mailing(poll_id='1', options=[('1', 'Первый'), ('2', 'Второй')], title='Что лучше?', media_paths=[r'C:\Users\hp\Desktop\job\media\GettyImages-531906282-5eb4b86361a94e8ebb72e26dbba44aa4_AhwE7Zv.jpg'])
-    # a = await get_botusers()
-    print(await get_product_managers())
+    print(await search_user_by_id('1'))
 
 if __name__ == "__main__":
     asyncio.run(some_async_function())

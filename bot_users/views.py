@@ -158,6 +158,8 @@ def manager_results(request):
                         'requests_for_kp': get_kp_requests_of_manager(manager.username, start_date, end_date),
                     }
 
+                results['category'] = manager.extended_user.category.name
+
                 return render(request, 'bot_users/manager_results.html', {'results': results})
 
             except (AttributeError, ExtendedUser.DoesNotExist):

@@ -6,6 +6,11 @@ from .serializers import PostSerializer, PostMediaSerializer, CliquePostSerializ
 from rest_framework.decorators import api_view
 from rest_framework.generics import ListAPIView
 from src.permissions import IsStaffAndSuperuser
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from django.contrib.contenttypes.models import ContentType
+
 
 class ApprovePost(APIView):
     permission_classes = [IsStaffAndSuperuser]
@@ -35,3 +40,16 @@ class CliqueListView(ListAPIView):
     permission_classes = [IsStaffAndSuperuser]
     queryset = Post.objects.all()
     serializer_class = CliquePostSerializer
+
+
+
+
+class CheckPostExistenceView(APIView):
+    def get(self, request, post_id):
+        try:
+            obj = Post.objects.get(id=int(post_id))
+            return Response({'exists': True}, status=status.HTTP_200_OK)
+        except Post.DoesNotExist:
+            return Response({'exists': False}, status=status.HTTP_404_NOT_FOUND)
+
+    

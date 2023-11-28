@@ -18,7 +18,7 @@ class BotUserAdmin(admin.ModelAdmin):
     list_filter = ('created_at', 'approved', 'group')
     search_fields = ('title', 'approved')
     ordering = ('approved',)
-    readonly_fields=('user',)
+    readonly_fields=('user', 'approved')
     inlines = [PollOptionsInline, PollMediaInline]
 
     def save_model(self, request, obj, form, change):
