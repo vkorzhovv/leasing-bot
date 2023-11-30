@@ -1,11 +1,13 @@
 from django.db.models.signals import post_save, pre_save, post_delete
 from django.dispatch import receiver
 from .models import Post, PostMedia
-from bot.django_services import send_post, get_post_path
+from bot.django_services import send_post, get_post_path, delete_post_message
 from asgiref.sync import async_to_sync
 import logging
 
 logger = logging.getLogger('django')
+
+post_message_id = {}
 
 # @receiver(post_save, sender=PostMedia)
 # def post_created(sender, instance, created, **kwargs):
@@ -76,14 +78,34 @@ logger = logging.getLogger('django')
 
 @receiver(post_save, sender=Post)
 def post_created(sender, created, instance, **kwargs):
+    post_id = instance.id
+    if instance.group and instance.user.extended_user.bot_user.username:
+        p = f'\nГруппа: {instance.group.name}\nМенеджер: {"@"+instance.user.extended_user.bot_user.username}'
+    elif instance.group:
+        p = f'\nГруппа: {instance.group.name}'
+    elif instance.user.extended_user.bot_user.username:
+        p = f'\nМенеджер: {"@"+instance.user.extended_user.bot_user.username}'
+    else:
+        p = f''
+
+    time = 'сейчас' if instance.scheduled_time==None else instance.scheduled_time
+    global post_message_id
+
     if not created:
         print('ok')
         send_post_sync = async_to_sync(send_post)
+        delete_post_message_sync = async_to_sync(delete_post_message)
         if instance.approved==False:
+            post_message = post_message_id.get(post_id, [])
+            for message in post_message[1:]:
+                    delete_post_message_sync(user_id=post_message[0], message_id=message)
             media_paths = list(Post.objects.get(pk=instance.id).mediafiles.all().values_list('absolute_media_path', flat=True))
             if instance.group:
-                send_post_sync(f'ID поста: {instance.id}\nТекст поста: {instance.text}\nID группы: {instance.group.id}\nТелеграм-ID менеджера: {instance.user.extended_user.bot_user.user_id} ({instance.user.extended_user.user.username}|запланировано на {instance.scheduled_time})', media_paths)
+                post_message_id[post_id] = send_post_sync(f'ID поста: {instance.id}\nТекст поста: {instance.text}\nID группы: {instance.group.id}\nТелеграм-ID менеджера: {instance.user.extended_user.bot_user.user_id} ({instance.user.extended_user.user.username}|запланировано на {time}){p}', media_paths)
                 logger.info("post with group has been sent to the admin: %s", instance.id)
+
+
+
             else:
-                send_post_sync(f'ID поста: {instance.id}\nТекст поста: {instance.text}\nID группы: None\nТелеграм-ID менеджера: {instance.user.extended_user.bot_user.user_id} ({instance.user.extended_user.user.username}|запланировано на {instance.scheduled_time})', media_paths)
+                post_message_id[post_id] = send_post_sync(f'ID поста: {instance.id}\nТекст поста: {instance.text}\nID группы: None\nТелеграм-ID менеджера: {instance.user.extended_user.bot_user.user_id} ({instance.user.extended_user.user.username}|запланировано на {time}){p}', media_paths)
                 logger.info("post without group has been sent to the admin: %s", instance.id)

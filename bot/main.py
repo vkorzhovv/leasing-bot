@@ -16,6 +16,7 @@ from aiogram.types import InputMediaPhoto, InputFile
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', filename='bot-info.log')
 logging.basicConfig(level=logging.ERROR, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', filename='bot-error.log')
 current_manager_index = 0
+previous_post_message = {}
 
 
 class BotStatesGroup(StatesGroup):
@@ -485,15 +486,25 @@ async def activate_user_handler(callback_query: CallbackQuery, state: FSMContext
 @dp.callback_query_handler(lambda query: query.data == 'post', state="*")
 async def post_handler(callback_query: CallbackQuery, state: FSMContext):
     admin = callback_query.message['chat']['id']
-    message = callback_query.message.text.split('\n')
+    message_list = callback_query.message.text.split('\n')
+    if len(message_list)==5:
+        message = callback_query.message.text.split('\n')[:-1]
+    elif len(message_list)==6:
+        message = callback_query.message.text.split('\n')[:-2]
+    else:
+        message = callback_query.message.text.split('\n')
     t = datetime.datetime(2023, 8, 25, 12, 49, tzinfo=datetime.timezone.utc)
     await change_post_status(message[0].split(': ')[1])
     time = message[-1].split(': ')[1].split(' (')[1].split('|запланировано на ')[1][:-1]
-    if time!='None':
+    print(time)
+    if time!='сейчас':
         asyncio.create_task(schedule_mailing(message=message, time=time))
     else:
         await do_mailing(message)
     logging.info(f"Пост {message[0].split(': ')[1]} был одобрен на рассылку админом")
+    await bot.edit_message_reply_markup(chat_id=callback_query.message['chat']['id'],
+                                        message_id=callback_query.message.message_id,
+                                        reply_markup=None)
     await bot.send_message(chat_id=admin, text=f"Рассылка поста {message[0].split(': ')[1]} одобрена!")
     await bot.send_message(chat_id=message[-1].split(': ')[1].split(' ')[0], text=f"Рассылка поста {message[0].split(': ')[1]} одобрена!")
 
@@ -501,9 +512,16 @@ async def post_handler(callback_query: CallbackQuery, state: FSMContext):
 @dp.callback_query_handler(lambda query: query.data == 'no_post', state="*")
 async def no_post_handler(callback_query: CallbackQuery, state: FSMContext):
     admin = callback_query.message['chat']['id']
-    message = callback_query.message.text.split('\n')
+    message_list = callback_query.message.text.split('\n')
+    if len(message_list)==5:
+        message = callback_query.message.text.split('\n')[:-1]
+    elif len(message_list)==6:
+        message = callback_query.message.text.split('\n')[:-2]
     manager_id = message[-1].split(': ')[1].split(' ')[0]
     logging.info(f"Пост {message[0].split(': ')[1]} не был одобрен на рассылку админом")
+    await bot.edit_message_reply_markup(chat_id=callback_query.message['chat']['id'],
+                                        message_id=callback_query.message.message_id,
+                                        reply_markup=None)
     await bot.send_message(chat_id=manager_id, text=f"Рассылка поста {message[0].split(': ')[1]} отклонена!")
 
 @dp.callback_query_handler(lambda query: query.data == 'poll', state="*")
@@ -525,6 +543,9 @@ async def activate_user_handler(callback_query: CallbackQuery, state: FSMContext
         await do_poll_mailing(poll_id, options, title, poll_group, media_paths)
 
     logging.info(f"Опрос {poll_id} был одобрен на рассылку админом")
+    await bot.edit_message_reply_markup(chat_id=callback_query.message['chat']['id'],
+                                        message_id=callback_query.message.message_id,
+                                        reply_markup=None)
     await bot.send_message(chat_id=user, text=f"Рассылка опроса {poll_id} одобрена!")
     await bot.send_message(chat_id=manager, text=f"Рассылка опроса {poll_id} одобрена!")
 
@@ -534,6 +555,9 @@ async def no_post_handler(callback_query: CallbackQuery, state: FSMContext):
     poll_info = await fetch_poll(poll_id)
     manager = poll_info['manager']
     logging.info(f"Опрос {poll_id} не был одобрен на рассылку админом")
+    await bot.edit_message_reply_markup(chat_id=callback_query.message['chat']['id'],
+                                        message_id=callback_query.message.message_id,
+                                        reply_markup=None)
     await bot.send_message(chat_id=manager, text=f"Рассылка опроса {poll_id} отклонена!")
 
 
@@ -793,6 +817,10 @@ async def callback_menu(callback_query: CallbackQuery, state: FSMContext):
 
 @dp.callback_query_handler(lambda query: query.data == 'manager_chat', state='*')
 async def callback_chat_with_manager(callback_query: CallbackQuery):
+    if callback_query.message.caption:
+        text = callback_query.message.caption
+    else:
+        text = callback_query.message.text
     logging.info(f"Телеграм-пользователь {callback_query.from_user.username} нажал на 'Чат с менеджером'")
     product_manager = await get_product_managers() # {'username': '@dbte5_py', 'phone': '+77473789020'}
 
@@ -800,9 +828,13 @@ async def callback_chat_with_manager(callback_query: CallbackQuery):
         if 'ID товара' not in callback_query.message.text:
             bot_user = callback_query.from_user.id
             phone = await search_user_by_id(bot_user)
+            if phone['phone'][0]=='7':
+                p = '+'+phone['phone']
+            else:
+                p = phone['phone']
 
             await bot.send_message(callback_query.from_user.id, f"Менеджер:\n@{product_manager['username']}")
-            await bot.send_message(int(product_manager['user_id']), f"Запросил Чат: @{callback_query.from_user.username}\nТелефон: {phone['phone']}")
+            await bot.send_message(int(product_manager['user_id']), f"{text}\nЗапросил Чат: @{callback_query.from_user.username}\nТелефон: <a href='tel:{p}'>{p}</a>", parse_mode=types.ParseMode.HTML)
 
     if callback_query.message.caption:
         product = callback_query.message.caption.split('\n')[1]
@@ -815,6 +847,10 @@ async def callback_chat_with_manager(callback_query: CallbackQuery):
     bot_user = callback_query.from_user.id
     global current_manager_index
     phone = await search_user_by_id(bot_user)
+    if phone['phone'][0]=='7':
+        p = '+'+phone['phone']
+    else:
+        p = phone['phone']
     try:
         product_managers = await get_manager_with_category(product_id=str(product_id))
         if len(product_managers)-1<current_manager_index:
@@ -832,7 +868,7 @@ async def callback_chat_with_manager(callback_query: CallbackQuery):
             await send_photo_with_url(TOKEN=TOKEN, CHAT_ID=str(callback_query.from_user.id), img_url=MESSAGES['manager_chat_user'][1], caption=MESSAGES['manager_chat_user'][0].replace('<p>', '').replace('</p>', '').replace('<br />', '')+f'\n{tg_username}', parse_mode=types.ParseMode.HTML, message=callback_query)
 
         # await bot.send_message(callback_query.from_user.id, f"{tg_username}")
-        await bot.send_message(int(manager['telegram_id']), f"Запросил Чат: @{callback_query.from_user.username}\nТелефон: {phone['phone']}")
+        await bot.send_message(int(manager['telegram_id']), f"{text}\nЗапросил Чат: @{callback_query.from_user.username}\nТелефон: <a href='tel:{p}'>{p}</a>", parse_mode=types.ParseMode.HTML)
 
     except:
         # await bot.send_message(int(callback_query.from_user.id), f"@{admin_tg}")
@@ -843,7 +879,7 @@ async def callback_chat_with_manager(callback_query: CallbackQuery):
             await create_command(key='manager_chat_user', text='Менеджер:')
             MESSAGES = await get_commands_list()
             await send_photo_with_url(TOKEN=TOKEN, CHAT_ID=str(callback_query.from_user.id), img_url=MESSAGES['manager_chat_user'][1], caption=MESSAGES['manager_chat_user'][0].replace('<p>', '').replace('</p>', '').replace('<br />', '')+f'\n@{admin_tg}', parse_mode=types.ParseMode.HTML, message=callback_query)
-        await bot.send_message(int(admin_id), f"Запросил Чат: @{callback_query.from_user.username}\nТелефон: {phone['phone']}")
+        await bot.send_message(int(admin_id), f"{text}\nЗапросил Чат: @{callback_query.from_user.username}\nТелефон: <a href='tel:{p}'>{p}</a>", parse_mode=types.ParseMode.HTML)
     current_manager_index+=1
 
 

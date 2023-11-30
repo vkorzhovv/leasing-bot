@@ -98,12 +98,25 @@ async def send_post(post, media_paths=None):
             input_media = media_type(media=types.InputFile(photo_file))
             media.append(input_media)
 
-        await bot.send_media_group(chat_id=user_id, media=media)
-        await bot.send_message(user_id, post, reply_markup=set_post_kb())
+        photos = await bot.send_media_group(chat_id=user_id, media=media)
+        post = await bot.send_message(user_id, post, reply_markup=set_post_kb())
 
+        l = [int(user_id), post.message_id]
         photo_file.close()
+        for i in photos:
+            l.append(i.message_id)
+        return l
     else:
-        await bot.send_message(user_id, post, reply_markup=set_post_kb())
+        post = await bot.send_message(user_id, post, reply_markup=set_post_kb())
+        return [int(user_id), post.message_id]
+
+
+
+async def delete_post_message(user_id, message_id):
+    try:
+        await bot.delete_message(chat_id=user_id, message_id=message_id)
+    except:
+        None
 
 
 
@@ -139,18 +152,34 @@ async def get_poll_path(poll_id):
 
 
 
-async def send_poll(poll_id, options, title, time, media_paths=None):
+async def send_poll(poll_id, options, title, time, manager, group, media_paths=None):
+    n1 = f'Опрос: {poll_id}'
+    n2 = f'Запланирован на: {time}'
+    n3 = f'Менеджер: {manager}'
+    n4 = f'Группа: {group}'
+    n = []
+    for i in {str(poll_id): n1, time: n2, manager: n3, group: n4}.items():
+        if i[0]!=None:
+            n.append(i[1])
+    n = '\n'.join(n)
+    photos = None
+
+
     if media_paths != []:
         media = types.MediaGroup()
         for path in media_paths:
             media.attach_photo(types.InputFile(rf'{path}'))
 
-        await bot.send_media_group(admin_id, media=media)
-    await bot.send_message(admin_id, f'{title}', reply_markup=set_options_kb(options))
-    if time!=None:
-        await bot.send_message(admin_id, f'Опрос: {poll_id}\nЗапланирован на: {time}', reply_markup=set_poll_kb())
-    else:
-        await bot.send_message(admin_id, f'Опрос: {poll_id}', reply_markup=set_poll_kb())
+        photos = await bot.send_media_group(admin_id, media=media)
+    options = await bot.send_message(admin_id, f'{title}', reply_markup=set_options_kb(options))
+    set_poll = await bot.send_message(admin_id, n, reply_markup=set_poll_kb())
+
+    l = [admin_id, set_poll.message_id, options.message_id]
+    if photos:
+        for photo in photos:
+            l.append(photo.message_id)
+
+    return l
 
 # async def send_poll(poll, media_paths=None):
 #     media = []

@@ -1,11 +1,12 @@
 from django.db.models.signals import post_save, pre_save, post_delete
 from django.dispatch import receiver
 from .models import Poll, PollMedia
-from bot.django_services import send_poll
+from bot.django_services import send_poll, delete_post_message
 from asgiref.sync import async_to_sync
 import logging
 
 logger = logging.getLogger('django')
+poll_message_id = {}
 
 # @receiver(post_save, sender=PollMedia)
 # def poll_created(sender, instance, created, **kwargs):
@@ -85,11 +86,29 @@ logger = logging.getLogger('django')
 
 @receiver(post_save, sender=Poll)
 def post_without_media_created(sender, created, instance, **kwargs):
+    global poll_message_id
+    poll_id = instance.id
     if not created:
         send_poll_sync = async_to_sync(send_poll)
+        delete_poll_message_sync = async_to_sync(delete_post_message)
         try:
             if instance.approved==False:
+                poll_message = poll_message_id.get(poll_id, [])
+                for message in poll_message[1:]:
+                    delete_poll_message_sync(user_id=poll_message[0], message_id=message)
                 print([media.absolute_media_path for media in instance.mediafiles.all()])
-                send_poll_sync(instance.id, [(option.id, option.option) for option in instance.options.all()], instance.title, instance.scheduled_time, [media.absolute_media_path for media in instance.mediafiles.all()])
+                if instance.user.extended_user.bot_user.username:
+                    manager = '@'+instance.user.extended_user.bot_user.username
+                else:
+                    manager = None
+
+                if instance.group:
+                    group = instance.group.name
+                else:
+                    group = None
+
+    
+
+                poll_message_id[poll_id] = send_poll_sync(instance.id, [(option.id, option.option) for option in instance.options.all()], instance.title, instance.scheduled_time, manager, group, [media.absolute_media_path for media in instance.mediafiles.all()])
         except:
             pass

@@ -34,3 +34,9 @@ class BotUserAdmin(admin.ModelAdmin):
         formset.save() # this will save the children
         if formset.model == PollMedia:
             form.instance.save() # form.instance is the parent
+
+    def has_change_permission(self, request, obj=None):
+        if obj and obj.approved:
+            return False
+        return True
+

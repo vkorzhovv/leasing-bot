@@ -267,6 +267,15 @@ async def send_last_interaction(user_id):
                 response_text = await response.text()
 
 
+# async def register_manager(CHAT_ID: str):
+#     fake = Faker()
+
+#     username = fake.user_name()
+#     password = fake.password()
+
+#     await bot.send_message(CHAT_ID, f'username: {username}\npassword: {password}\nadmin-panel: http://localhost:8000/admin', reply_markup=set_manager_kb())
+
+
 
 async def save_manager(username, password, bot_user_id):
     url = f'{domen}api/register/'
@@ -509,6 +518,83 @@ async def send_poll(user, options, title, media_paths=None):
 
         await bot.send_media_group(user, media=media)
     await bot.send_message(user, f'{title}', reply_markup=set_options_kb(options))
+
+# async def send_poll(user_id, message):
+    # media = []
+
+    # poll_id = message[0].split(': ')[1]
+    # options = message[2].split(': ')[1].split(',')
+    # title = message[1].split(': ')[1]
+    # correct_option = message[3].split(': ')[1]
+
+    # media_paths = await get_poll_path(poll_id)
+
+    # poll_options = [types.PollOption(text=i, voter_count=0) for i in options]
+
+    # if len(media_paths)>0:
+    #     for photo_path in media_paths:
+    #         if photo_path.lower().endswith(('.jpg', '.jpeg', '.png')):
+    #             media_type = types.InputMediaPhoto
+    #         elif photo_path.lower().endswith(('.mp4', '.avi', '.mkv')):
+    #             media_type = types.InputMediaVideo
+    #         else:
+    #             continue
+    #         photo_file = open(photo_path, 'rb')
+    #         input_media = media_type(media=types.InputFile(photo_file))
+    #         media.append(input_media)
+
+
+
+
+    #     if correct_option is not None and correct_option.isdigit():
+    #         poll = types.Poll(question=title,
+    #                         options=[o.text for o in poll_options],
+    #                         type=types.PollType.QUIZ,
+    #                         correct_option_id=int(correct_option)-1)
+
+    #         await bot.send_media_group(chat_id=user_id, media=media)
+    #         await bot.send_poll(chat_id=user_id,
+    #                             question=poll.question,
+    #                             options=[o.text for o in poll_options],
+    #                             type=poll.type,
+    #                             correct_option_id=poll.correct_option_id)
+    #     else:
+    #         poll = types.Poll(question=title,
+    #                         options=[o.text for o in poll_options],
+    #                         type=types.PollType.REGULAR,
+    #                         )
+
+    #         await bot.send_media_group(chat_id=user_id, media=media)
+    #         await bot.send_poll(chat_id=user_id,
+    #                             question=poll.question,
+    #                             options=[o.text for o in poll_options],
+    #                             type=poll.type,
+    #                             )
+    # else:
+    #     if correct_option is not None and correct_option.isdigit():
+    #         poll = types.Poll(question=title,
+    #                         options=[o.text for o in poll_options],
+    #                         type=types.PollType.QUIZ,
+    #                         correct_option_id=int(correct_option)-1)
+
+    #         await bot.send_poll(chat_id=user_id,
+    #                             question=poll.question,
+    #                             options=[o.text for o in poll_options],
+    #                             type=poll.type,
+    #                             correct_option_id=poll.correct_option_id)
+    #     else:
+    #         poll = types.Poll(question=title,
+    #                                 options=[o.text for o in poll_options],
+    #                                 type=types.PollType.REGULAR,
+    #                                 )
+
+    #         await bot.send_poll(chat_id=user_id,
+    #                             question=poll.question,
+    #                             options=[o.text for o in poll_options],
+    #                             type=poll.type,
+    #                             )
+
+
 
 
 #storynews change approved
@@ -912,6 +998,9 @@ async def get_product_managers():
 
 
 async def some_async_function():
+    # Ваш код, где вы хотите вызвать функцию get_categories_list()
+    #a = await do_poll_mailing(poll_id='1', options=[('1', 'Первый'), ('2', 'Второй')], title='Что лучше?', media_paths=[r'C:\Users\hp\Desktop\job\media\GettyImages-531906282-5eb4b86361a94e8ebb72e26dbba44aa4_AhwE7Zv.jpg'])
+    # a = await get_botusers()
     print(await search_user_by_id('1'))
 
 if __name__ == "__main__":
