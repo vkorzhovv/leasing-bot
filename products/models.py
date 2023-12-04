@@ -8,6 +8,7 @@ from django.conf import settings
 import os
 from django.utils.safestring import mark_safe
 from urllib.parse import urlparse, unquote
+from .services import remove_special_characters
 
 class Equipment(models.Model):
     name = models.CharField(max_length=64, verbose_name='Название')
@@ -78,6 +79,13 @@ class Product(models.Model):
             download_url = response.json()['href']
             parsed_url = urlparse(download_url)
             filename = unquote(parsed_url.query.split("&filename=")[1].split("&")[0])
+            splitted = filename.split('.')
+            extension = splitted[-1]
+            name = '.'.join(splitted[0:-1])
+            filename = remove_special_characters(name)
+            filename = filename+'.'+extension
+
+
 
             download_response = requests.get(download_url)
             file_content = download_response.content
@@ -132,6 +140,11 @@ class ProductMedia(models.Model):
             download_url = response.json()['href']
             parsed_url = urlparse(download_url)
             filename = unquote(parsed_url.query.split("&filename=")[1].split("&")[0])
+            splitted = filename.split('.')
+            extension = splitted[-1]
+            name = '.'.join(splitted[0:-1])
+            filename = remove_special_characters(name)
+            filename = filename+'.'+extension
 
             download_response = requests.get(download_url)
             file_content = download_response.content
