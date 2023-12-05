@@ -505,8 +505,10 @@ async def post_handler(callback_query: CallbackQuery, state: FSMContext):
     await bot.edit_message_reply_markup(chat_id=callback_query.message['chat']['id'],
                                         message_id=callback_query.message.message_id,
                                         reply_markup=None)
-    await bot.send_message(chat_id=admin, text=f"Рассылка поста {message[0].split(': ')[1]} одобрена!")
-    await bot.send_message(chat_id=message[-1].split(': ')[1].split(' ')[0], text=f"Рассылка поста {message[0].split(': ')[1]} одобрена!")
+    post_exists = await check_post_exist(message[0].split(': ')[1])
+    if post_exists:
+        await bot.send_message(chat_id=admin, text=f"Рассылка поста {message[0].split(': ')[1]} одобрена!")
+        await bot.send_message(chat_id=message[-1].split(': ')[1].split(' ')[0], text=f"Рассылка поста {message[0].split(': ')[1]} одобрена!")
 
 
 @dp.callback_query_handler(lambda query: query.data == 'no_post', state="*")
@@ -522,43 +524,50 @@ async def no_post_handler(callback_query: CallbackQuery, state: FSMContext):
     await bot.edit_message_reply_markup(chat_id=callback_query.message['chat']['id'],
                                         message_id=callback_query.message.message_id,
                                         reply_markup=None)
-    await bot.send_message(chat_id=manager_id, text=f"Рассылка поста {message[0].split(': ')[1]} отклонена!")
+    post_exists = await check_post_exist(message[0].split(': ')[1])
+    if post_exists:
+        await bot.send_message(chat_id=manager_id, text=f"Рассылка поста {message[0].split(': ')[1]} отклонена!")
 
 @dp.callback_query_handler(lambda query: query.data == 'poll', state="*")
 async def activate_user_handler(callback_query: CallbackQuery, state: FSMContext):
     user = callback_query.message['chat']['id']
     poll_id = callback_query.message.text.split('\n')[0].split(': ')[1]
+    poll_exists = await check_poll_exist(poll_id)
+    if poll_exists:
     # time = message[-1].split(': ')[1].split(' (')[1].split('|запланировано на ')[1][:-1] # 2023-10-10T06:22:54Z
-    await change_poll_status(poll_id)
-    poll_info = await fetch_poll(poll_id)
-    options = poll_info['options']
-    title = poll_info['title']
-    poll_group = poll_info['poll_group']
-    media_paths = poll_info['media_paths']
-    scheduled_time = poll_info['scheduled_time']
-    manager = poll_info['manager']
-    if scheduled_time!=None:
-        asyncio.create_task(schedule_poll_mailing(poll_id=poll_id, options=options, title=title, time=scheduled_time, poll_group=poll_group, media_paths=media_paths))
-    else:
-        await do_poll_mailing(poll_id, options, title, poll_group, media_paths)
+        await change_poll_status(poll_id)
+        poll_info = await fetch_poll(poll_id)
+        options = poll_info['options']
+        title = poll_info['title']
+        poll_group = poll_info['poll_group']
+        media_paths = poll_info['media_paths']
+        scheduled_time = poll_info['scheduled_time']
+        manager = poll_info['manager']
+        if scheduled_time!=None:
+            asyncio.create_task(schedule_poll_mailing(poll_id=poll_id, options=options, title=title, time=scheduled_time, poll_group=poll_group, media_paths=media_paths))
+        else:
+            await do_poll_mailing(poll_id, options, title, poll_group, media_paths)
+
+        await bot.send_message(chat_id=user, text=f"Рассылка опроса {poll_id} одобрена!")
+        await bot.send_message(chat_id=manager, text=f"Рассылка опроса {poll_id} одобрена!")
 
     logging.info(f"Опрос {poll_id} был одобрен на рассылку админом")
     await bot.edit_message_reply_markup(chat_id=callback_query.message['chat']['id'],
                                         message_id=callback_query.message.message_id,
                                         reply_markup=None)
-    await bot.send_message(chat_id=user, text=f"Рассылка опроса {poll_id} одобрена!")
-    await bot.send_message(chat_id=manager, text=f"Рассылка опроса {poll_id} одобрена!")
 
 @dp.callback_query_handler(lambda query: query.data == 'no_poll', state="*")
 async def no_post_handler(callback_query: CallbackQuery, state: FSMContext):
     poll_id = callback_query.message.text.split('\n')[0].split(': ')[1]
-    poll_info = await fetch_poll(poll_id)
-    manager = poll_info['manager']
-    logging.info(f"Опрос {poll_id} не был одобрен на рассылку админом")
+    poll_exists = await check_poll_exist(poll_id)
+    if poll_exists:
+        poll_info = await fetch_poll(poll_id)
+        manager = poll_info['manager']
+        await bot.send_message(chat_id=manager, text=f"Рассылка опроса {poll_id} отклонена!")
+        logging.info(f"Опрос {poll_id} не был одобрен на рассылку админом")
     await bot.edit_message_reply_markup(chat_id=callback_query.message['chat']['id'],
                                         message_id=callback_query.message.message_id,
                                         reply_markup=None)
-    await bot.send_message(chat_id=manager, text=f"Рассылка опроса {poll_id} отклонена!")
 
 
 @dp.callback_query_handler(lambda query: re.match(r'^option_\d+$', query.data))
