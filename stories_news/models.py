@@ -6,7 +6,7 @@ class StoryNews(models.Model):
 
     CHOICES = (
         ('news', 'Новость'),
-        ('story', 'Актуальное'),
+        ('story', 'Актуальный статус'),
     )
 
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Менеджер')
@@ -15,7 +15,7 @@ class StoryNews(models.Model):
     photo = models.ImageField(blank=True, null=True, verbose_name='Фотография')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Создано')
     approved = models.BooleanField(default=False, verbose_name='Подтверждено')
-    sort = models.CharField(max_length=10, choices=CHOICES, verbose_name='Актуальное/Новость')
+    sort = models.CharField(max_length=10, choices=CHOICES, verbose_name='Актуальный статус/Новость')
     position = models.PositiveIntegerField(null=True, blank=True, verbose_name='Номер позиции')
 
     def save(self, *args, **kwargs):
@@ -39,8 +39,9 @@ class StoryNews(models.Model):
             return None
 
     class Meta:
-        verbose_name = 'Актуальное/Новость'
-        verbose_name_plural = 'Актуальное/Новости'
+        verbose_name = 'Актуальный статус/Новость'
+        verbose_name_plural = 'Актуальные статусы/Новости'
 
     def __str__(self):
         return f"{self.sort}: {self.name}"
+        

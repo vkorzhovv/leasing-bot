@@ -39,6 +39,6 @@ class BotUserAdmin(admin.ModelAdmin):
             form.instance.save() # form.instance is the parent
 
     def has_change_permission(self, request, obj=None):
-        if obj and obj.approved:
+        if obj and (obj.approved or obj.approved==None):
             return False
         return True

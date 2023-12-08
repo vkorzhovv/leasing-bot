@@ -220,7 +220,7 @@ def get_categories_kb() -> ReplyKeyboardMarkup:
     kb = ReplyKeyboardMarkup(resize_keyboard=True)
     kb.add(KeyboardButton('Поиск'))
     kb.add(KeyboardButton('Каталог'), KeyboardButton('Акции'))
-    kb.add(KeyboardButton('Новости'), KeyboardButton('Актуальное'))
+    kb.add(KeyboardButton('Новости'), KeyboardButton('Актуальные статусы'))
     kb.add(KeyboardButton('О нас'))
     return kb
 
@@ -526,6 +526,7 @@ async def no_post_handler(callback_query: CallbackQuery, state: FSMContext):
                                         reply_markup=None)
     post_exists = await check_post_exist(message[0].split(': ')[1])
     if post_exists:
+        #await disapprove_post(message[0].split(': ')[1])
         await bot.send_message(chat_id=manager_id, text=f"Рассылка поста {message[0].split(': ')[1]} отклонена!")
 
 @dp.callback_query_handler(lambda query: query.data == 'poll', state="*")
@@ -705,7 +706,7 @@ async def cmd_catalog(message: types.Message, state: FSMContext) -> None:
         #   Устанавливаем состояние ProductState.current_index для перехода к обработке кнопок навигации
             # await ItemState.current_index.set()
 
-        elif message.text=='Актуальное':
+        elif message.text=='Актуальные статусы':
             a = await bot.send_message(message.from_user.id, "OK", reply_markup=ReplyKeyboardRemove())
             await bot.delete_message(message.chat.id, a.message_id)
             logging.info(f"Телеграм-пользователь {message.from_user.username} просматривает актуальное")

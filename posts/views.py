@@ -26,6 +26,20 @@ class ApprovePost(APIView):
         serializer = PostSerializer(post)
         return Response(serializer.data)
 
+class DisApprovePost(APIView):
+    permission_classes = [IsStaffAndSuperuser]
+    def patch(self, request, post_id):
+        try:
+            post = Post.objects.get(pk=post_id)
+        except Post.DoesNotExist:
+            return Response({'error': 'Post not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        post.approved = False
+        post.save()
+
+        serializer = PostSerializer(post)
+        return Response(serializer.data)
+
 
 @api_view(['GET'])
 def get_media_urls(request, post_id):

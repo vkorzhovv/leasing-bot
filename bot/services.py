@@ -327,6 +327,19 @@ async def change_post_status(post_id):
             else:
                 return None
 
+async def disapprove_post(post_id):
+    url = f'{domen}api/disapprove_post/{post_id}/'
+
+    auth = aiohttp.BasicAuth(admin_username, admin_password)
+
+    async with aiohttp.ClientSession(auth=auth) as session:
+        async with session.patch(url, json={"post_id": post_id}) as response:
+            if response.status == 200:
+                data = await response.json()
+                return data
+            else:
+                return None
+
 
 async def check_post_exist(post_id):
     url = f'{domen}api/check_post_exist/{post_id}/'
@@ -349,7 +362,8 @@ async def do_mailing(post):
             await post_post_users_count(post[0].split(': ')[1], len(users))
     except:
         users = await get_botusers()
-        await post_post_users_count(post[0].split(': ')[1], len(users))
+        if users:
+            await post_post_users_count(post[0].split(': ')[1], len(users))
 
     exists = await check_post_exist(post[0].split(': ')[1])
     if exists:

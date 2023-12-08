@@ -8,7 +8,7 @@ class BotUserAdmin(admin.ModelAdmin):
     list_filter = ('created_at', 'sort', 'approved')
     search_fields = ('name', 'description', 'created_at', 'sort')
     ordering = ('-created_at',)
-    readonly_fields=('user',)
+    readonly_fields=('user', 'approved')
 
     def save_model(self, request, obj, form, change):
         if not obj.user:

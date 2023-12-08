@@ -95,7 +95,7 @@ def post_created(sender, created, instance, **kwargs):
         print('ok')
         send_post_sync = async_to_sync(send_post)
         delete_post_message_sync = async_to_sync(delete_post_message)
-        if instance.approved==False:
+        if instance.approved==False:# or instance.approved==None:
             post_message = post_message_id.get(post_id, [])
             for message in post_message[1:]:
                     delete_post_message_sync(user_id=post_message[0], message_id=message)
