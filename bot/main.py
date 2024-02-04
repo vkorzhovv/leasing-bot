@@ -11,6 +11,7 @@ from bot import storage, bot, dp, TOKEN, admin_id, domen
 import logging
 import datetime
 from aiogram.types import InputMediaPhoto, InputFile
+from aiogram.types.update import AllowedUpdates
 
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', filename='bot-info.log')
@@ -1584,15 +1585,28 @@ async def callback_category(callback_query: CallbackQuery, state: FSMContext):
 
 
 
-if __name__ == '__main__':
-    while True:
-        try:
-            executor.start_polling(dp, skip_updates=True)
-        except KeyboardInterrupt:
-            logging.info("Бот остановлен вручную.")
-            break
-        except Exception as e:
-            logging.error(f"Произошла ошибка: {e}", exc_info=True)
-
 # if __name__ == '__main__':
-#     executor.start_polling(dp, skip_updates=True)
+#     while True:
+#         try:
+#             executor.start_polling(dp, skip_updates=True)
+#         except KeyboardInterrupt:
+#             logging.info("Бот остановлен вручную.")
+#             break
+#         except Exception as e:
+#             logging.error(f"Произошла ошибка: {e}", exc_info=True)
+
+if __name__ == '__main__':
+    executor.start_polling(dp, skip_updates=True, allowed_updates = [
+    "message",
+    "edited_message",
+    "channel_post",
+    "edited_channel_post",
+    "inline_query",
+    "chosen_inline_result",
+    "callback_query",
+    "shipping_query",
+    "pre_checkout_query",
+    "poll",
+    "poll_answer",
+]
+)
