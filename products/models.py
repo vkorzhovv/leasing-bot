@@ -9,6 +9,7 @@ import os
 from django.utils.safestring import mark_safe
 from urllib.parse import urlparse, unquote
 from .services import remove_special_characters
+from django_resized import ResizedImageField
 
 class Equipment(models.Model):
     name = models.CharField(max_length=64, verbose_name='Название')
@@ -48,7 +49,7 @@ class Product(models.Model):
     product_model = models.CharField(max_length=128, null=True, blank=True, verbose_name='Модель')
     name = models.CharField(max_length=128, null=True, blank=True, verbose_name='Название')
     price = models.DecimalField(max_digits=10, decimal_places=2 , null=True, blank=True, verbose_name='Стоимость')
-    photo = models.ImageField(upload_to='images', blank=True, verbose_name='Фотография')
+    photo = ResizedImageField(size=[1270, 600], upload_to='images', blank=True, verbose_name='Фотография')
     photo_url = models.CharField(max_length=128, null=True, blank=True, verbose_name='Адрес для яндекс-картинки')
     description = models.TextField(null=True, blank=True, verbose_name='Описание')
     kp = models.FileField('КП', upload_to='kp/', blank=True, null=True)
