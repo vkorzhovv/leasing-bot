@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     "nested_admin",
     "import_export",
     "ckeditor",
+    "imagekit",
 ]
 
 MIDDLEWARE = [

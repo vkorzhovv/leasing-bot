@@ -10,6 +10,8 @@ from django.utils.safestring import mark_safe
 from urllib.parse import urlparse, unquote
 from .services import remove_special_characters
 from django_resized import ResizedImageField
+from PIL import Image
+import cv2
 
 class Equipment(models.Model):
     name = models.CharField(max_length=64, verbose_name='Название')
@@ -49,7 +51,7 @@ class Product(models.Model):
     product_model = models.CharField(max_length=128, null=True, blank=True, verbose_name='Модель')
     name = models.CharField(max_length=128, null=True, blank=True, verbose_name='Название')
     price = models.DecimalField(max_digits=10, decimal_places=2 , null=True, blank=True, verbose_name='Стоимость')
-    photo = ResizedImageField(size=[1270, 600], upload_to='images', blank=True, verbose_name='Фотография')
+    photo = models.ImageField(upload_to='images', blank=True, verbose_name='Фотография')
     photo_url = models.CharField(max_length=128, null=True, blank=True, verbose_name='Адрес для яндекс-картинки')
     description = models.TextField(null=True, blank=True, verbose_name='Описание')
     kp = models.FileField('КП', upload_to='kp/', blank=True, null=True)
@@ -94,6 +96,37 @@ class Product(models.Model):
 
             temp_file = File(io.BytesIO(file_content), name=filename)
             self.photo = temp_file
+            super().save(*args, **kwargs)
+
+
+
+            image = cv2.imread(self.photo.path, cv2.IMREAD_COLOR)
+            height, width = image.shape[:2]  
+            print(height, width)   
+
+
+            if height > 1280 or width > 1280:
+                # Вычисляем масштаб для изменения размеров с сохранением пропорций
+                scale_factor = min(1280 / height, 1280 / width)
+
+                # Рассчитываем новые размеры с сохранением пропорций
+                new_height = int(height * scale_factor)
+                new_width = int(width * scale_factor)
+
+                print(new_width, new_height)
+                # Изменяем размер изображения до 1280x640
+                resized_image = cv2.resize(image, (new_width, new_height))
+
+                # Сохраняем измененное изображение во временный буфер
+                _, buffer = cv2.imencode('.' + extension, resized_image)
+                temp_file = File(io.BytesIO(buffer.tobytes()), name=filename)
+                self.photo = temp_file 
+
+            elif not (height > 1280 or width > 1280):
+                print('hm')
+                temp_file = File(io.BytesIO(file_content), name=filename)
+                self.photo = temp_file
+
 
 
         if self.kp_url:
