@@ -1002,6 +1002,7 @@ async def get_product_managers():
         async with session.get(url) as response:
             if response.status == 200:
                 data = await response.json()
+                print(data)
                 try:
                     data = random.choice(data)
                 except:

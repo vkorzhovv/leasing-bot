@@ -834,6 +834,7 @@ async def callback_chat_with_manager(callback_query: CallbackQuery):
         text = callback_query.message.text
     logging.info(f"Телеграм-пользователь {callback_query.from_user.username} нажал на 'Чат с менеджером'")
     product_manager = await get_product_managers() # {'username': '@dbte5_py', 'phone': '+77473789020'}
+    print(product_manager)
 
     if callback_query.message.text:
         if 'ID товара' not in callback_query.message.text:
@@ -1502,11 +1503,14 @@ async def callback_category(callback_query: CallbackQuery, state: FSMContext):
             category_id = int(new_categories)
             logging.info(f"Телеграм-пользователь {callback_query.from_user.username} просматривает товары категории {category_id}")
             a = await create_category_views(str(category_id))
+            logging.info(f"Сработала create_category_views 1505")
             # b = await increment_category_views(str(category_id))
             data_list = await get_products_list(category_id=category_id)
+            logging.info(f"Сработала get_products_list 1508")
             data_list = data_list+[{'name': 'Товары закончились', 'promotion': None, 'price': None, 'id': None, 'description': None, 'brand': None, 'product_model': None, 'equipment': None, 'manufacturer': None, 'year': None, 'currency': None, 'status': None}]
 
             if data_list:
+                logging.info(f"Сработало условие if data_list 1512")
                 # Сохраняем список продуктов и текущий индекс элемента в FSM
                 async with state.proxy() as data:
                     data['products'] = data_list
@@ -1515,25 +1519,38 @@ async def callback_category(callback_query: CallbackQuery, state: FSMContext):
                     product = data_list[0]
                     try:
                         await create_product_views(product["id"])
+                        logging.info(f"Сработало create_product_views 1521")
                     except:
                         None
 
 
 
                     photo = await download_photo(product.get("photo", None))
+                    logging.info(f"Сработало download_photo 1528")
                     promotion = '\n\nАкция!' if product['promotion'] else ''
                     price = '{:,.0f}'.format(float(product['price'])).replace(',', ' ') if product['price']!=None else 'None'
                     media = await get_product_media(str(product['id']))
+                    logging.info(f"Сработало get_product_media 1532: {media}")
                     kp = await get_kp_path(product['id'])
+                    logging.info(f"Сработало get_kp_path 1535: {kp}")
                     if photo!=None:
+                        logging.info(f"Сработало условие if photo!=None 1536")
                         s = f"<b>ID товара</b>: {product['id']}\n<b>Название</b>: {product['name']}\n<b>Описание</b>: {product['description']}\n<b>Марка</b>: {product['brand']}\n<b>Модель</b>: {product['product_model']}\n<b>Комплектация</b>: {product['equipment']}\n<b>Производитель</b>: {product['manufacturer']}\n<b>Год выпуска</b>: {product['year']}\n<b>Стоимость</b>: {price} {product['currency']}\n<b>Статус</b>: {product['status']}"
-                        filtered_lines = [line for line in s.split('\n') if line.split(':')[1] not in (' None', ' ')]
-                        result = '\n'.join(filtered_lines)
+                        logging.info(f's = {s}')
+                        try:
+                            filtered_lines = [line for line in s.split('\n') if line.split(':')[1] not in (' None', ' ')]
+                            logging.info(f'filtered_lines = {filtered_lines}')
+                            result = '\n'.join(filtered_lines)
+                        except Exception as e:
+                            logging.info(e)
+                            result = s
                         a = await bot.send_photo(callback_query.from_user.id, photo, caption=result.replace('None', ' ')+promotion, reply_markup=get_product_kb(media, data_list, kp), parse_mode=types.ParseMode.HTML)
+                        logging.info(f"Сработало bot.send_photo 1541")
                         data['product_message_id'] = a.message_id
                         data['product_name'] = product['name']
                         data['product_price'] = product['price']
                     else:
+                        logging.info(f"Сработало условие if photo==None 1545")
                         if product['name']=='Товары закончились':
                             MESSAGES = await get_commands_list()
                             if 'no_products_left' in MESSAGES:
@@ -1545,6 +1562,7 @@ async def callback_category(callback_query: CallbackQuery, state: FSMContext):
                         else:
                             s = f"<b>ID товара</b>: {product['id']}\n<b>Название</b>: {product['name']}\n<b>Описание</b>: {product['description']}\n<b>Марка</b>: {product['brand']}\n<b>Модель</b>: {product['product_model']}\n<b>Комплектация</b>: {product['equipment']}\n<b>Производитель</b>: {product['manufacturer']}\n<b>Год выпуска</b>: {product['year']}\n<b>Стоимость</b>: {price} {product['currency']}\n<b>Статус</b>: {product['status']}"
                         try:
+                            logging.info(f's = {s}')
                             filtered_lines = [line for line in s.split('\n') if line.split(':')[1] not in (' None', ' ')]
                         except:
                             filtered_lines = [s]
