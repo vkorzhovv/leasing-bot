@@ -776,8 +776,13 @@ async def cmd_catalog(message: types.Message, state: FSMContext) -> None:
                         a = await message.answer(result.replace('None', '')+'\n\nАкция!', reply_markup=get_promotions_kb(media, data_list, kp), parse_mode=types.ParseMode.HTML)
                     else:
                         s = f"<b>ID товара</b>: {promotion['id']}\n<b>Название</b>: {promotion['name']}\n<b>Описание</b>: {promotion['promotion_description']}\n<b>Марка</b>: {promotion['brand']}\n<b>Модель</b>: {promotion['product_model']}\n<b>Комплектация</b>: {promotion['equipment']}\n<b>Производитель</b>: {promotion['manufacturer']}\n<b>Год выпуска</b>: {promotion['year']}\n<b>Стоимость</b>: {price} {promotion['currency']}\n<b>Статус</b>: {promotion['status']}"
-                        filtered_lines = [line for line in s.split('\n') if line.split(':')[1] not in (' None', ' ')]
-                        result = '\n'.join(filtered_lines)
+                        try:
+                            filtered_lines = [line for line in s.split('\n') if line.split(':')[1] not in (' None', ' ')]
+                            logging.info(f'filtered_lines = {filtered_lines}')
+                            result = '\n'.join(filtered_lines)
+                        except Exception as e:
+                            logging.info(e)
+                            result = s
                         a = await bot.send_photo(message.from_user.id, photo, caption=result.replace('None', '')+'\n\nАкция!', reply_markup=get_promotions_kb(media, data_list, kp), parse_mode=types.ParseMode.HTML)
 
                     data['promotion_message_id'] = a.message_id
@@ -1009,8 +1014,13 @@ async def promotions_navigation(callback_query: CallbackQuery, state: FSMContext
                 current_data['promotion_message_id'] = a.message_id
             else:
                 s = f"<b>ID товара</b>: {promotion['id']}\n<b>Название</b>: {promotion['name']}\n<b>Описание</b>: {promotion['promotion_description']}\n<b>Марка</b>: {promotion['brand']}\n<b>Модель</b>: {promotion['product_model']}\n<b>Комплектация</b>: {promotion['equipment']}\n<b>Производитель</b>: {promotion['manufacturer']}\n<b>Год выпуска</b>: {promotion['year']}\n<b>Стоимость</b>: {price} {promotion['currency']}\n<b>Статус</b>: {promotion['status']}"
-                filtered_lines = [line for line in s.split('\n') if line.split(':')[1] not in (' None', ' ')]
-                result = '\n'.join(filtered_lines)
+                try:
+                    filtered_lines = [line for line in s.split('\n') if line.split(':')[1] not in (' None', ' ')]
+                    logging.info(f'filtered_lines = {filtered_lines}')
+                    result = '\n'.join(filtered_lines)
+                except Exception as e:
+                    logging.info(e)
+                    result = s
                 a = await bot.send_photo(callback_query.from_user.id, photo, caption=result.replace('None', '')+'\n\nАкция!', reply_markup=get_promotions_kb(media, promotions, kp), parse_mode=types.ParseMode.HTML)
                 await bot.delete_message(chat_id=callback_query.message.chat.id, message_id=current_data['promotion_message_id'])
                 current_data['promotion_message_id'] = a.message_id
@@ -1037,15 +1047,25 @@ async def promotions_navigation(callback_query: CallbackQuery, state: FSMContext
             kp = await get_kp_path(str(promotion['id']))
             if not photo:
                 s = f"<b>ID товара</b>: {promotion['id']}\n<b>Название</b>: {promotion['name']}\n<b>Описание</b>: {promotion['promotion_description']}\n<b>Марка</b>: {promotion['brand']}\n<b>Модель</b>: {promotion['product_model']}\n<b>Комплектация</b>: {promotion['equipment']}\n<b>Производитель</b>: {promotion['manufacturer']}\n<b>Год выпуска</b>: {promotion['year']}\n<b>Стоимость</b>: {price} {promotion['currency']}\n<b>Статус</b>: {promotion['status']}"
-                filtered_lines = [line for line in s.split('\n') if line.split(':')[1] not in (' None', ' ')]
-                result = '\n'.join(filtered_lines)
+                try:
+                    filtered_lines = [line for line in s.split('\n') if line.split(':')[1] not in (' None', ' ')]
+                    logging.info(f'filtered_lines = {filtered_lines}')
+                    result = '\n'.join(filtered_lines)
+                except Exception as e:
+                    logging.info(e)
+                    result = s
                 a = await bot.send_message(callback_query.from_user.id, result.replace('None', '')+'\n\nАкция!', reply_markup=get_promotions_kb(media, promotions, kp), parse_mode=types.ParseMode.HTML)
                 await bot.delete_message(chat_id=callback_query.message.chat.id, message_id=current_data['promotion_message_id'])
                 current_data['promotion_message_id'] = a.message_id
             else:
                 s = f"<b>ID товара</b>: {promotion['id']}\n<b>Название</b>: {promotion['name']}\n<b>Описание</b>: {promotion['promotion_description']}\n<b>Марка</b>: {promotion['brand']}\n<b>Модель</b>: {promotion['product_model']}\n<b>Комплектация</b>: {promotion['equipment']}\n<b>Производитель</b>: {promotion['manufacturer']}\n<b>Год выпуска</b>: {promotion['year']}\n<b>Стоимость</b>: {price} {promotion['currency']}\n<b>Статус</b>: {promotion['status']}"
-                filtered_lines = [line for line in s.split('\n') if line.split(':')[1] not in (' None', ' ')]
-                result = '\n'.join(filtered_lines)
+                try:
+                    filtered_lines = [line for line in s.split('\n') if line.split(':')[1] not in (' None', ' ')]
+                    logging.info(f'filtered_lines = {filtered_lines}')
+                    result = '\n'.join(filtered_lines)
+                except Exception as e:
+                    logging.info(e)
+                    result = s
                 a = await bot.send_photo(callback_query.from_user.id, photo, caption=result.replace('None', '')+'\n\nАкция!', reply_markup=get_promotions_kb(media, promotions, kp), parse_mode=types.ParseMode.HTML)
                 await bot.delete_message(chat_id=callback_query.message.chat.id, message_id=current_data['promotion_message_id'])
                 current_data['promotion_message_id'] = a.message_id
@@ -1315,8 +1335,13 @@ async def process_product_navigation(callback_query: CallbackQuery, state: FSMCo
             kp = await get_kp_path(product['id'])
             if photo:
                 s = f"<b>ID товара</b>: {product['id']}\n<b>Название</b>: {product['name']}\n<b>Описание</b>: {product['description']}\n<b>Марка</b>: {product['brand']}\n<b>Модель</b>: {product['product_model']}\n<b>Комплектация</b>: {product['equipment']}\n<b>Производитель</b>: {product['manufacturer']}\n<b>Год выпуска</b>: {product['year']}\n<b>Стоимость</b>: {price} {product['currency']}\n<b>Статус</b>: {product['status']}"
-                filtered_lines = [line for line in s.split('\n') if line.split(':')[1] not in (' None', ' ')]
-                result = '\n'.join(filtered_lines)
+                try:
+                    filtered_lines = [line for line in s.split('\n') if line.split(':')[1] not in (' None', ' ')]
+                    logging.info(f'filtered_lines = {filtered_lines}')
+                    result = '\n'.join(filtered_lines)
+                except Exception as e:
+                    logging.info(e)
+                    result = s
                 a = await bot.send_photo(callback_query.from_user.id, photo, caption=result.replace('None', '')+promotion, reply_markup=get_product_kb(media, products, kp), parse_mode=types.ParseMode.HTML)
                 await bot.delete_message(chat_id=callback_query.message.chat.id, message_id=current_data['product_message_id'])
                 current_data['product_message_id'] = a.message_id
@@ -1365,8 +1390,13 @@ async def process_product_navigation(callback_query: CallbackQuery, state: FSMCo
             kp = await get_kp_path(product.get('id', None))
             if photo:
                 s = f"<b>ID товара</b>: {product['id']}\n<b>Название</b>: {product['name']}\n<b>Описание</b>: {product['description']}\n<b>Марка</b>: {product['brand']}\n<b>Модель</b>: {product['product_model']}\n<b>Комплектация</b>: {product['equipment']}\n<b>Производитель</b>: {product['manufacturer']}\n<b>Год выпуска</b>: {product['year']}\n<b>Стоимость</b>: {price} {product['currency']}\n<b>Статус</b>: {product['status']}"
-                filtered_lines = [line for line in s.split('\n') if line.split(':')[1] not in (' None', ' ')]
-                result = '\n'.join(filtered_lines)
+                try:
+                    filtered_lines = [line for line in s.split('\n') if line.split(':')[1] not in (' None', ' ')]
+                    logging.info(f'filtered_lines = {filtered_lines}')
+                    result = '\n'.join(filtered_lines)
+                except Exception as e:
+                    logging.info(e)
+                    result = s
                 a = await bot.send_photo(callback_query.from_user.id, photo, caption=result.replace('None', '')+promotion, reply_markup=get_product_kb(media, products, kp), parse_mode=types.ParseMode.HTML)
                 await bot.delete_message(chat_id=callback_query.message.chat.id, message_id=current_data['product_message_id'])
                 current_data['product_message_id'] = a.message_id
@@ -1442,8 +1472,13 @@ async def process_brand(callback_query: CallbackQuery, state: FSMContext):
                 kp = await get_kp_path(product['id'])
                 if photo!=None:
                     s = f"<b>ID товара</b>: {product['id']}\n<b>Название</b>: {product['name']}\n<b>Описание</b>: {product['description']}\n<b>Марка</b>: {product['brand']}\n<b>Модель</b>: {product['product_model']}\n<b>Комплектация</b>: {product['equipment']}\n<b>Производитель</b>: {product['manufacturer']}\n<b>Год выпуска</b>: {product['year']}\n<b>Стоимость</b>: {price} {product['currency']}\n<b>Статус</b>: {product['status']}"
-                    filtered_lines = [line for line in s.split('\n') if line.split(':')[1] not in (' None', ' ')]
-                    result = '\n'.join(filtered_lines)
+                    try:
+                        filtered_lines = [line for line in s.split('\n') if line.split(':')[1] not in (' None', ' ')]
+                        logging.info(f'filtered_lines = {filtered_lines}')
+                        result = '\n'.join(filtered_lines)
+                    except Exception as e:
+                        logging.info(e)
+                        result = s
                     a = await bot.send_photo(callback_query.from_user.id, photo, caption=result.replace('None', '')+promotion, reply_markup=get_product_kb(media,filtered_data_list, kp), parse_mode=types.ParseMode.HTML)
                     data['product_message_id'] = a.message_id
                     data['product_name'] = product['name']
