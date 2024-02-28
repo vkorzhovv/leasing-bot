@@ -56,7 +56,7 @@ def get_chat_requests_of_manager(manager, start_date, end_date): #dbte
     extended_user = ExtendedUser.objects.get(user__username=manager)
     user = extended_user.bot_user.username
     lst = []
-    chat_requests = ManagerChatRequest.objects.filter(manager=manager, created_at__range=[start_date, end_date]).count()
+    chat_requests = ManagerChatRequest.objects.filter(manager=user, created_at__range=[start_date, end_date]).count()
     # for request in chat_requests:
     #     lst.append(f"({request.product}, Менеджер: {request.manager},Пользователь: {request.bot_user}, Время: {request.created_at}")
     # return ')\n'.join(lst)
@@ -67,7 +67,7 @@ def get_kp_requests_of_manager(manager, start_date, end_date): #dbte
     extended_user = ExtendedUser.objects.get(user__username=manager)
     user = extended_user.bot_user.username
     lst = []
-    kp_requests = KpRequest.objects.filter(manager=manager, created_at__range=[start_date, end_date]).count()
+    kp_requests = KpRequest.objects.filter(manager=user, created_at__range=[start_date, end_date]).count()
     # for request in chat_requests:
     #     lst.append(f"({request.product}, Менеджер: {request.manager},Пользователь: {request.bot_user}, Время: {request.created_at}")
     # return ')\n'.join(lst)

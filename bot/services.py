@@ -1012,11 +1012,26 @@ async def get_product_managers():
                 return None
 
 
+async def get_manager(product_id):
+    url = f'{domen}api/get_manager/{product_id}/'
+    auth = aiohttp.BasicAuth(admin_username, admin_password)
+    async with aiohttp.ClientSession(auth=auth) as session:
+        async with session.get(url) as response:
+            try:
+                data = await response.json()
+            except:
+                data = {'username': admin_tg, 'user_id': admin_id}
+            return data
+
+
+
+
+
 async def some_async_function():
     # Ваш код, где вы хотите вызвать функцию get_categories_list()
     #a = await do_poll_mailing(poll_id='1', options=[('1', 'Первый'), ('2', 'Второй')], title='Что лучше?', media_paths=[r'C:\Users\hp\Desktop\job\media\GettyImages-531906282-5eb4b86361a94e8ebb72e26dbba44aa4_AhwE7Zv.jpg'])
     # a = await get_botusers()
-    print(await search_user_by_id('1'))
+    print(await get_manager('1'))
 
 if __name__ == "__main__":
     asyncio.run(some_async_function())

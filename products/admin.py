@@ -8,6 +8,7 @@ from import_export.admin import ExportActionModelAdmin, ImportExportModelAdmin
 from import_export.formats.base_formats import DEFAULT_FORMATS
 from products.formats import XML
 from import_export import resources, fields, widgets
+import openpyxl
 
 
 
@@ -52,11 +53,13 @@ class ProductResource(resources.ModelResource):
         self.media_urls = []
 
     def before_import_row(self, row, row_number=None, **kwargs):
-        if row['media_url']!=None:
-            for url in row['media_url'].split():
-                self.media_urls.append(url)
+        if 'media_url' in row:
+            if row['media_url']!=None:
+                for url in row['media_url'].split(','):
+                    self.media_urls.append(url)
 
     def after_save_instance(self, instance, using_transactions, dry_run):
+        ProductMedia.objects.filter(product=instance).delete()
         for media_url in self.media_urls:
             ProductMedia(media_url=media_url, product=instance).save()
         self.media_urls = []

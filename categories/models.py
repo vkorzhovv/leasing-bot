@@ -1,11 +1,14 @@
 from django.db import models
+from django.contrib.auth.models import User
 
 
 class Category(models.Model):
     name = models.CharField(max_length=100, verbose_name='Название')
     parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE, related_name='children', verbose_name='Родитель')
     position = models.PositiveIntegerField(null=True, blank=True, verbose_name='Номер позиции')
-
+    users = models.ManyToManyField(User, null=True, blank=True, related_name='categories', verbose_name='Менеджеры')
+    last_position = models.PositiveIntegerField(default=0, verbose_name='Последняя позиция')
+    
     def get_level(self):
         level = 0
         parents = []

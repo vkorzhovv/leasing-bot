@@ -14,6 +14,7 @@ class CategoryAdmin(admin.ModelAdmin):
     list_filter = ('parent',)
     search_fields = ('name',)
     ordering = ('parent',)
+    exclude = ('last_position', )
 
 
     # def indented_name(self, obj):

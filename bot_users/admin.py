@@ -48,6 +48,7 @@ admin.site.register(BotUserGroup, BotUserGroupAdmin)
 
 class ExtendedUserInline(admin.StackedInline):
     model = ExtendedUser
+    exclude = ('category', 'product_manager')
     can_delete = False
 
 

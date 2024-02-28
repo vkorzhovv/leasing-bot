@@ -154,8 +154,8 @@ def manager_results(request):
                         'not_approved_news': get_not_approved_news_of_manager(manager, start_date, end_date),
                         'approved_stories': get_approved_stories_of_manager(manager, start_date, end_date),
                         'not_approved_stories': get_not_approved_stories_of_manager(manager, start_date, end_date),
-                        'requests_for_chat': get_chat_requests_of_manager(manager.username, start_date, end_date),
-                        'requests_for_kp': get_kp_requests_of_manager(manager.username, start_date, end_date),
+                        'requests_for_chat': get_chat_requests_of_manager(manager, start_date, end_date),
+                        'requests_for_kp': get_kp_requests_of_manager(manager, start_date, end_date),
                     }
 
                 results['category'] = manager.extended_user.category.name

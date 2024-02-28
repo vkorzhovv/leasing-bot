@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "posts.apps.PostsConfig",
     "polls.apps.PollsConfig",
     "bot_statistics",
+    "xml_import",
 
 
     "rest_framework",

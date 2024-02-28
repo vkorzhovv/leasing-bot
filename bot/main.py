@@ -765,7 +765,7 @@ async def cmd_catalog(message: types.Message, state: FSMContext) -> None:
                                 MESSAGES = await get_commands_list()
                                 s=MESSAGES['no_products_left'][0].replace('<br />', '').replace('<p>', '').replace('</p>', '')
                         else:
-                            s = f"<b>ID товара</b>: {promotion['id']}\n<b>Название</b>: {promotion['name']}\n<b>Описание</b>: {promotion['promotion_description']}\n<b>Марка</b>: {promotion['brand']}\n<b>Модель</b>: {promotion['product_model']}\n<b>Комплектация</b>: {promotion['equipment']}\n<b>Производитель</b>: {promotion['manufacturer']}\n<b>Год выпуска</b>: {promotion['year']}\n<b>Стоимость</b>: {price} {promotion['currency']}\n<b>Статус</b>: {promotion['status']}"
+                            s = f"<b>ID товара</b>: {promotion['id']}\n<b>Название</b>: {promotion['name']}\n<b>Колсёсная формула</b>: {promotion['wheels']}\n<b>Описание</b>: {promotion['promotion_description']}\n<b>Марка</b>: {promotion['brand']}\n<b>Модель</b>: {promotion['product_model']}\n<b>Комплектация</b>: {promotion['equipment']}\n<b>Производитель</b>: {promotion['manufacturer']}\n<b>Год выпуска</b>: {promotion['year']}\n<b>Стоимость</b>: {price} {promotion['currency']}\n<b>Статус</b>: {promotion['status']}"
                         try:
                             filtered_lines = [line for line in s.split('\n') if line.split(':')[1] not in (' None', ' ')]
                         except:
@@ -775,7 +775,7 @@ async def cmd_catalog(message: types.Message, state: FSMContext) -> None:
                         result = '\n'.join(filtered_lines)
                         a = await message.answer(result.replace('None', '')+'\n\nАкция!', reply_markup=get_promotions_kb(media, data_list, kp), parse_mode=types.ParseMode.HTML)
                     else:
-                        s = f"<b>ID товара</b>: {promotion['id']}\n<b>Название</b>: {promotion['name']}\n<b>Описание</b>: {promotion['promotion_description']}\n<b>Марка</b>: {promotion['brand']}\n<b>Модель</b>: {promotion['product_model']}\n<b>Комплектация</b>: {promotion['equipment']}\n<b>Производитель</b>: {promotion['manufacturer']}\n<b>Год выпуска</b>: {promotion['year']}\n<b>Стоимость</b>: {price} {promotion['currency']}\n<b>Статус</b>: {promotion['status']}"
+                        s = f"<b>ID товара</b>: {promotion['id']}\n<b>Название</b>: {promotion['name']}\n<b>Колсёсная формула</b>: {promotion['wheels']}\n<b>Описание</b>: {promotion['promotion_description']}\n<b>Марка</b>: {promotion['brand']}\n<b>Модель</b>: {promotion['product_model']}\n<b>Комплектация</b>: {promotion['equipment']}\n<b>Производитель</b>: {promotion['manufacturer']}\n<b>Год выпуска</b>: {promotion['year']}\n<b>Стоимость</b>: {price} {promotion['currency']}\n<b>Статус</b>: {promotion['status']}"
                         try:
                             filtered_lines = [line for line in s.split('\n') if line.split(':')[1] not in (' None', ' ')]
                             logging.info(f'filtered_lines = {filtered_lines}')
@@ -835,69 +835,82 @@ async def callback_menu(callback_query: CallbackQuery, state: FSMContext):
 async def callback_chat_with_manager(callback_query: CallbackQuery):
     if callback_query.message.caption:
         text = callback_query.message.caption
+        product_id = text.split('\n')[0].split(': ')[1]
+        product = text.split('\n')[1]
     else:
         text = callback_query.message.text
+        product_id = text.split('\n')[0].split(': ')[1]
+        product = text.split('\n')[1]
+
+    product_link = f"{domen}admin/products/product/{product_id}/change/"
     logging.info(f"Телеграм-пользователь {callback_query.from_user.username} нажал на 'Чат с менеджером'")
-    product_manager = await get_product_managers() # {'username': '@dbte5_py', 'phone': '+77473789020'}
+    product_manager = await get_manager(product_id) # {'username': 'dbte5_py', 'phone': '+77473789020'}
     print(product_manager)
 
-    if callback_query.message.text:
-        if 'ID товара' not in callback_query.message.text:
-            bot_user = callback_query.from_user.id
-            phone = await search_user_by_id(bot_user)
-            if phone['phone'][0]=='7':
-                p = '+'+phone['phone']
-            else:
-                p = phone['phone']
 
-            await bot.send_message(callback_query.from_user.id, f"Менеджер:\n@{product_manager['username']}")
-            await bot.send_message(int(product_manager['user_id']), f"{text}\nЗапросил Чат: @{callback_query.from_user.username}\nТелефон: <a href='tel:{p}'>{p}</a>", parse_mode=types.ParseMode.HTML)
-
-    if callback_query.message.caption:
-        product = callback_query.message.caption.split('\n')[1]
-        product_id = callback_query.message.caption.split('\n')[0].split(': ')[1]
-    else:
-        product = callback_query.message.text.split('\n')[1]
-        product_id = callback_query.message.text.split('\n')[0].split(': ')[1]
-    await create_product_chat(str(product_id))
-    product_link = f"{domen}admin/products/product/{product_id}/change/"
     bot_user = callback_query.from_user.id
-    global current_manager_index
     phone = await search_user_by_id(bot_user)
     if phone['phone'][0]=='7':
         p = '+'+phone['phone']
     else:
         p = phone['phone']
-    try:
-        product_managers = await get_manager_with_category(product_id=str(product_id))
-        if len(product_managers)-1<current_manager_index:
-            current_manager_index = 0
-        manager = product_managers[current_manager_index]
-        manager_phone = await search_user_by_id(manager['telegram_id'])
-        tg_username = f"@{manager['telegram_username']}" if manager['telegram_username'] is not None else manager_phone['phone']
-        await create_manager_request(product=f'{product} {product_link}', bot_user=bot_user, manager=manager['username'])
-        MESSAGES = await get_commands_list()
-        if 'manager_chat_user' in MESSAGES:
-            print(await send_photo_with_url(TOKEN=TOKEN, CHAT_ID=str(callback_query.from_user.id), img_url=MESSAGES['manager_chat_user'][1], caption=MESSAGES['manager_chat_user'][0].replace('<p>', '').replace('</p>', '').replace('<br />', '')+f'\n{tg_username}', parse_mode=types.ParseMode.HTML, message=callback_query))
-        else:
-            await create_command(key='manager_chat_user', text='Менеджер:')
-            MESSAGES = await get_commands_list()
-            await send_photo_with_url(TOKEN=TOKEN, CHAT_ID=str(callback_query.from_user.id), img_url=MESSAGES['manager_chat_user'][1], caption=MESSAGES['manager_chat_user'][0].replace('<p>', '').replace('</p>', '').replace('<br />', '')+f'\n{tg_username}', parse_mode=types.ParseMode.HTML, message=callback_query)
 
-        # await bot.send_message(callback_query.from_user.id, f"{tg_username}")
-        await bot.send_message(int(manager['telegram_id']), f"{text}\nЗапросил Чат: @{callback_query.from_user.username}\nТелефон: <a href='tel:{p}'>{p}</a>", parse_mode=types.ParseMode.HTML)
+    if callback_query.from_user.username:
+        logging.info(f"Телеграм-пользователь {callback_query.from_user.username} нажал на   'Чат с менеджером'")
+        sender_username = f"\nЗапросил Чат: @{callback_query.from_user.username}"
+    else:
+        logging.info("Телеграм-пользователь нажал на 'Чат с менеджером', но его username не доступен")
+        sender_username = ""
 
-    except:
-        # await bot.send_message(int(callback_query.from_user.id), f"@{admin_tg}")
-        MESSAGES = await get_commands_list()
-        if 'manager_chat_user' in MESSAGES:
-            print(await send_photo_with_url(TOKEN=TOKEN, CHAT_ID=str(callback_query.from_user.id), img_url=MESSAGES['manager_chat_user'][1], caption=MESSAGES['manager_chat_user'][0].replace('<p>', '').replace('</p>', '').replace('<br />', '')+f'\n@{admin_tg}', parse_mode=types.ParseMode.HTML, message=callback_query))
-        else:
-            await create_command(key='manager_chat_user', text='Менеджер:')
-            MESSAGES = await get_commands_list()
-            await send_photo_with_url(TOKEN=TOKEN, CHAT_ID=str(callback_query.from_user.id), img_url=MESSAGES['manager_chat_user'][1], caption=MESSAGES['manager_chat_user'][0].replace('<p>', '').replace('</p>', '').replace('<br />', '')+f'\n@{admin_tg}', parse_mode=types.ParseMode.HTML, message=callback_query)
-        await bot.send_message(int(admin_id), f"{text}\nЗапросил Чат: @{callback_query.from_user.username}\nТелефон: <a href='tel:{p}'>{p}</a>", parse_mode=types.ParseMode.HTML)
-    current_manager_index+=1
+    await create_manager_request(product=f'{product} {product_link}', bot_user=bot_user, manager=product_manager['username'])
+    await bot.send_message(callback_query.from_user.id, f"Менеджер:\n@{product_manager['username']}")
+    await bot.send_message(int(product_manager['user_id']), f"{text}{sender_username}\nТелефон: <a href='tel:{p}'>{p}</a>", parse_mode=types.ParseMode.HTML)
+
+    # if callback_query.message.caption:
+    #     product = callback_query.message.caption.split('\n')[1]
+    #     product_id = callback_query.message.caption.split('\n')[0].split(': ')[1]
+    # else:
+    #     product = callback_query.message.text.split('\n')[1]
+    #     product_id = callback_query.message.text.split('\n')[0].split(': ')[1]
+    # await create_product_chat(str(product_id))
+    # product_link = f"{domen}admin/products/product/{product_id}/change/"
+    # bot_user = callback_query.from_user.id
+    # global current_manager_index
+    # phone = await search_user_by_id(bot_user)
+    # if phone['phone'][0]=='7':
+    #     p = '+'+phone['phone']
+    # else:
+    #     p = phone['phone']
+    # try:
+    #     product_managers = await get_manager_with_category(product_id=str(product_id))
+    #     if len(product_managers)-1<current_manager_index:
+    #         current_manager_index = 0
+    #     manager = product_managers[current_manager_index]
+    #     manager_phone = await search_user_by_id(manager['telegram_id'])
+    #     tg_username = f"@{manager['telegram_username']}" if manager['telegram_username'] is not None else manager_phone['phone']
+    #     await create_manager_request(product=f'{product} {product_link}', bot_user=bot_user, manager=manager['username'])
+    #     MESSAGES = await get_commands_list()
+    #     if 'manager_chat_user' in MESSAGES:
+    #         print(await send_photo_with_url(TOKEN=TOKEN, CHAT_ID=str(callback_query.from_user.id), img_url=MESSAGES['manager_chat_user'][1], caption=MESSAGES['manager_chat_user'][0].replace('<p>', '').replace('</p>', '').replace('<br />', '')+f'\n{tg_username}', parse_mode=types.ParseMode.HTML, message=callback_query))
+    #     else:
+    #         await create_command(key='manager_chat_user', text='Менеджер:')
+    #         MESSAGES = await get_commands_list()
+    #         await send_photo_with_url(TOKEN=TOKEN, CHAT_ID=str(callback_query.from_user.id), img_url=MESSAGES['manager_chat_user'][1], caption=MESSAGES['manager_chat_user'][0].replace('<p>', '').replace('</p>', '').replace('<br />', '')+f'\n{tg_username}', parse_mode=types.ParseMode.HTML, message=callback_query)
+
+    #     # await bot.send_message(callback_query.from_user.id, f"{tg_username}")
+    #     await bot.send_message(int(manager['telegram_id']), f"{text}\nЗапросил Чат: @{callback_query.from_user.username}\nТелефон: <a href='tel:{p}'>{p}</a>", parse_mode=types.ParseMode.HTML)
+
+    # except:
+    #     # await bot.send_message(int(callback_query.from_user.id), f"@{admin_tg}")
+    #     MESSAGES = await get_commands_list()
+    #     if 'manager_chat_user' in MESSAGES:
+    #         print(await send_photo_with_url(TOKEN=TOKEN, CHAT_ID=str(callback_query.from_user.id), img_url=MESSAGES['manager_chat_user'][1], caption=MESSAGES['manager_chat_user'][0].replace('<p>', '').replace('</p>', '').replace('<br />', '')+f'\n@{admin_tg}', parse_mode=types.ParseMode.HTML, message=callback_query))
+    #     else:
+    #         await create_command(key='manager_chat_user', text='Менеджер:')
+    #         MESSAGES = await get_commands_list()
+    #         await send_photo_with_url(TOKEN=TOKEN, CHAT_ID=str(callback_query.from_user.id), img_url=MESSAGES['manager_chat_user'][1], caption=MESSAGES['manager_chat_user'][0].replace('<p>', '').replace('</p>', '').replace('<br />', '')+f'\n@{admin_tg}', parse_mode=types.ParseMode.HTML, message=callback_query)
+    #     await bot.send_message(int(admin_id), f"{text}\nЗапросил Чат: @{callback_query.from_user.username}\nТелефон: <a href='tel:{p}'>{p}</a>", parse_mode=types.ParseMode.HTML)
+    # current_manager_index+=1
 
 
 
@@ -908,23 +921,22 @@ async def callback_kp_request(callback_query: CallbackQuery):
         text = callback_query.message.caption
     else:
         text = callback_query.message.text
-    # await BotStatesGroup.name.set()
-    if callback_query.message.caption:
-        product = callback_query.message.caption.split('\n')[1]
-        product_id = callback_query.message.caption.split('\n')[0].split(': ')[1]
-    else:
-        product = callback_query.message.text.split('\n')[1]
-        product_id = callback_query.message.text.split('\n')[0].split(': ')[1]
-    global current_manager_index
-    managers = await get_manager_with_category(product_id=str(product_id))
-    if len(managers)-1<current_manager_index:
-        current_manager_index=0
-    if type(managers)!=list:
-        manager = {"telegram_username": admin_tg, "telegram_id": admin_id}
-    else:
-        manager = managers[current_manager_index]
-    manager_phone = await search_user_by_id(int(manager['telegram_id']))
-    tg_username = f"@{manager['telegram_username']}" if manager['telegram_username'] is not None else manager_phone['phone']
+
+    product = text.split('\n')[1]
+    product_id = text.split('\n')[0].split(': ')[1]
+
+    product_manager = await get_manager(product_id)
+    # global current_manager_index
+    # managers = await get_manager_with_category(product_id=str(product_id))
+    # if len(managers)-1<current_manager_index:
+    #     current_manager_index=0
+    # if type(managers)!=list:
+    #     manager = {"telegram_username": admin_tg, "telegram_id": admin_id}
+    # else:
+    #     manager = managers[current_manager_index]
+    # manager_phone = await search_user_by_id(int(manager['telegram_id']))
+    # tg_username = f"@{manager['telegram_username']}" if manager['telegram_username'] is not None else manager_phone['phone']
+
     await create_product_kp(str(product_id))
     # MESSAGES = await get_commands_list()
     # # await create_profile(user_id=message.from_user.id)
@@ -943,10 +955,11 @@ async def callback_kp_request(callback_query: CallbackQuery):
     else:
         await bot.send_message(callback_query.from_user.id, 'Менеджер скоро с вами свяжется')
     product_link = f"{domen}admin/products/product/{product_id}/change/"
-    await create_kp_request(product=f'{product} {product_link}', bot_user=user, manager=manager['username'])
+    await create_kp_request(product=f'{product} {product_link}', bot_user=user, manager=product_manager['username'])
+    print(product_manager)
     try:
         # d = await search_manager_id(manager_telegram_username)
-        await bot.send_message(int(manager['telegram_id']), f"{text}\nЗапросил КП: @{callback_query.from_user.username}\nТелефон: {phone['phone']}")
+        await bot.send_message(int(product_manager['user_id']), f"{text}\nЗапросил КП: @{callback_query.from_user.username}\nТелефон: {phone['phone']}")
     except:
         await bot.send_message(int(admin_id), f"{text}\nЗапросил КП: @{callback_query.from_user.username}\nТелефон: {phone['phone']}")
     current_manager_index+=1
@@ -1002,7 +1015,7 @@ async def promotions_navigation(callback_query: CallbackQuery, state: FSMContext
                         MESSAGES = await get_commands_list()
                         s=MESSAGES['no_products_left'][0].replace('<br />', '').replace('<p>', '').replace('</p>', '')
                 else:
-                    s = f"<b>ID товара</b>: {promotion['id']}\n<b>Название</b>: {promotion['name']}\n<b>Описание</b>: {promotion['promotion_description']}\n<b>Марка</b>: {promotion['brand']}\n<b>Модель</b>: {promotion['product_model']}\n<b>Комплектация</b>: {promotion['equipment']}\n<b>Производитель</b>: {promotion['manufacturer']}\n<b>Год выпуска</b>: {promotion['year']}\n<b>Стоимость</b>: {price} {promotion['currency']}\n<b>Статус</b>: {promotion['status']}"
+                    s = f"<b>ID товара</b>: {promotion['id']}\n<b>Название</b>: {promotion['name']}\n<b>Колсёсная формула</b>: {promotion['wheels']}\n<b>Описание</b>: {promotion['promotion_description']}\n<b>Марка</b>: {promotion['brand']}\n<b>Модель</b>: {promotion['product_model']}\n<b>Комплектация</b>: {promotion['equipment']}\n<b>Производитель</b>: {promotion['manufacturer']}\n<b>Год выпуска</b>: {promotion['year']}\n<b>Стоимость</b>: {price} {promotion['currency']}\n<b>Статус</b>: {promotion['status']}"
                 try:
                     filtered_lines = [line for line in s.split('\n') if line.split(':')[1] not in (' None', ' ')]
                 except:
@@ -1013,7 +1026,7 @@ async def promotions_navigation(callback_query: CallbackQuery, state: FSMContext
                 await bot.delete_message(chat_id=callback_query.message.chat.id, message_id=current_data['promotion_message_id'])
                 current_data['promotion_message_id'] = a.message_id
             else:
-                s = f"<b>ID товара</b>: {promotion['id']}\n<b>Название</b>: {promotion['name']}\n<b>Описание</b>: {promotion['promotion_description']}\n<b>Марка</b>: {promotion['brand']}\n<b>Модель</b>: {promotion['product_model']}\n<b>Комплектация</b>: {promotion['equipment']}\n<b>Производитель</b>: {promotion['manufacturer']}\n<b>Год выпуска</b>: {promotion['year']}\n<b>Стоимость</b>: {price} {promotion['currency']}\n<b>Статус</b>: {promotion['status']}"
+                s = f"<b>ID товара</b>: {promotion['id']}\n<b>Название</b>: {promotion['name']}\n<b>Колсёсная формула</b>: {promotion['wheels']}\n<b>Описание</b>: {promotion['promotion_description']}\n<b>Марка</b>: {promotion['brand']}\n<b>Модель</b>: {promotion['product_model']}\n<b>Комплектация</b>: {promotion['equipment']}\n<b>Производитель</b>: {promotion['manufacturer']}\n<b>Год выпуска</b>: {promotion['year']}\n<b>Стоимость</b>: {price} {promotion['currency']}\n<b>Статус</b>: {promotion['status']}"
                 try:
                     filtered_lines = [line for line in s.split('\n') if line.split(':')[1] not in (' None', ' ')]
                     logging.info(f'filtered_lines = {filtered_lines}')
@@ -1046,7 +1059,7 @@ async def promotions_navigation(callback_query: CallbackQuery, state: FSMContext
             media = await get_product_media(str(promotion['id']))
             kp = await get_kp_path(str(promotion['id']))
             if not photo:
-                s = f"<b>ID товара</b>: {promotion['id']}\n<b>Название</b>: {promotion['name']}\n<b>Описание</b>: {promotion['promotion_description']}\n<b>Марка</b>: {promotion['brand']}\n<b>Модель</b>: {promotion['product_model']}\n<b>Комплектация</b>: {promotion['equipment']}\n<b>Производитель</b>: {promotion['manufacturer']}\n<b>Год выпуска</b>: {promotion['year']}\n<b>Стоимость</b>: {price} {promotion['currency']}\n<b>Статус</b>: {promotion['status']}"
+                s = f"<b>ID товара</b>: {promotion['id']}\n<b>Название</b>: {promotion['name']}\n<b>Колсёсная формула</b>: {promotion['wheels']}\n<b>Описание</b>: {promotion['promotion_description']}\n<b>Марка</b>: {promotion['brand']}\n<b>Модель</b>: {promotion['product_model']}\n<b>Комплектация</b>: {promotion['equipment']}\n<b>Производитель</b>: {promotion['manufacturer']}\n<b>Год выпуска</b>: {promotion['year']}\n<b>Стоимость</b>: {price} {promotion['currency']}\n<b>Статус</b>: {promotion['status']}"
                 try:
                     filtered_lines = [line for line in s.split('\n') if line.split(':')[1] not in (' None', ' ')]
                     logging.info(f'filtered_lines = {filtered_lines}')
@@ -1058,7 +1071,7 @@ async def promotions_navigation(callback_query: CallbackQuery, state: FSMContext
                 await bot.delete_message(chat_id=callback_query.message.chat.id, message_id=current_data['promotion_message_id'])
                 current_data['promotion_message_id'] = a.message_id
             else:
-                s = f"<b>ID товара</b>: {promotion['id']}\n<b>Название</b>: {promotion['name']}\n<b>Описание</b>: {promotion['promotion_description']}\n<b>Марка</b>: {promotion['brand']}\n<b>Модель</b>: {promotion['product_model']}\n<b>Комплектация</b>: {promotion['equipment']}\n<b>Производитель</b>: {promotion['manufacturer']}\n<b>Год выпуска</b>: {promotion['year']}\n<b>Стоимость</b>: {price} {promotion['currency']}\n<b>Статус</b>: {promotion['status']}"
+                s = f"<b>ID товара</b>: {promotion['id']}\n<b>Название</b>: {promotion['name']}\n<b>Колсёсная формула</b>: {promotion['wheels']}\n<b>Описание</b>: {promotion['promotion_description']}\n<b>Марка</b>: {promotion['brand']}\n<b>Модель</b>: {promotion['product_model']}\n<b>Комплектация</b>: {promotion['equipment']}\n<b>Производитель</b>: {promotion['manufacturer']}\n<b>Год выпуска</b>: {promotion['year']}\n<b>Стоимость</b>: {price} {promotion['currency']}\n<b>Статус</b>: {promotion['status']}"
                 try:
                     filtered_lines = [line for line in s.split('\n') if line.split(':')[1] not in (' None', ' ')]
                     logging.info(f'filtered_lines = {filtered_lines}')
@@ -1334,7 +1347,7 @@ async def process_product_navigation(callback_query: CallbackQuery, state: FSMCo
             media = await get_product_media(str(product['id']))
             kp = await get_kp_path(product['id'])
             if photo:
-                s = f"<b>ID товара</b>: {product['id']}\n<b>Название</b>: {product['name']}\n<b>Описание</b>: {product['description']}\n<b>Марка</b>: {product['brand']}\n<b>Модель</b>: {product['product_model']}\n<b>Комплектация</b>: {product['equipment']}\n<b>Производитель</b>: {product['manufacturer']}\n<b>Год выпуска</b>: {product['year']}\n<b>Стоимость</b>: {price} {product['currency']}\n<b>Статус</b>: {product['status']}"
+                s = f"<b>ID товара</b>: {product['id']}\n<b>Название</b>: {product['name']}\n<b>Колсёсная формула</b>: {product['wheels']}\n<b>Описание</b>: {product['description']}\n<b>Марка</b>: {product['brand']}\n<b>Модель</b>: {product['product_model']}\n<b>Комплектация</b>: {product['equipment']}\n<b>Производитель</b>: {product['manufacturer']}\n<b>Год выпуска</b>: {product['year']}\n<b>Стоимость</b>: {price} {product['currency']}\n<b>Статус</b>: {product['status']}"
                 try:
                     filtered_lines = [line for line in s.split('\n') if line.split(':')[1] not in (' None', ' ')]
                     logging.info(f'filtered_lines = {filtered_lines}')
@@ -1355,7 +1368,7 @@ async def process_product_navigation(callback_query: CallbackQuery, state: FSMCo
                         MESSAGES = await get_commands_list()
                         s=MESSAGES['no_products_left'][0].replace('<br />', '').replace('<p>', '').replace('</p>', '')
                 else:
-                    s = f"<b>ID товара</b>: {product['id']}\n<b>Название</b>: {product['name']}\n<b>Описание</b>: {product['description']}\n<b>Марка</b>: {product['brand']}\n<b>Модель</b>: {product['product_model']}\n<b>Комплектация</b>: {product['equipment']}\n<b>Производитель</b>: {product['manufacturer']}\n<b>Год выпуска</b>: {product['year']}\n<b>Стоимость</b>: {price} {product['currency']}\n<b>Статус</b>: {product['status']}"
+                    s = f"<b>ID товара</b>: {product['id']}\n<b>Название</b>: {product['name']}\n<b>Колсёсная формула</b>: {product['wheels']}\n<b>Описание</b>: {product['description']}\n<b>Марка</b>: {product['brand']}\n<b>Модель</b>: {product['product_model']}\n<b>Комплектация</b>: {product['equipment']}\n<b>Производитель</b>: {product['manufacturer']}\n<b>Год выпуска</b>: {product['year']}\n<b>Стоимость</b>: {price} {product['currency']}\n<b>Статус</b>: {product['status']}"
                     try:
                         filtered_lines = [line for line in s.split('\n') if line.split(':')[1] not in (' None', ' ')]
                     except:
@@ -1389,7 +1402,7 @@ async def process_product_navigation(callback_query: CallbackQuery, state: FSMCo
             media = await get_product_media(str(product.get('id', None)))
             kp = await get_kp_path(product.get('id', None))
             if photo:
-                s = f"<b>ID товара</b>: {product['id']}\n<b>Название</b>: {product['name']}\n<b>Описание</b>: {product['description']}\n<b>Марка</b>: {product['brand']}\n<b>Модель</b>: {product['product_model']}\n<b>Комплектация</b>: {product['equipment']}\n<b>Производитель</b>: {product['manufacturer']}\n<b>Год выпуска</b>: {product['year']}\n<b>Стоимость</b>: {price} {product['currency']}\n<b>Статус</b>: {product['status']}"
+                s = f"<b>ID товара</b>: {product['id']}\n<b>Название</b>: {product['name']}\n<b>Колсёсная формула</b>: {product['wheels']}\n<b>Описание</b>: {product['description']}\n<b>Марка</b>: {product['brand']}\n<b>Модель</b>: {product['product_model']}\n<b>Комплектация</b>: {product['equipment']}\n<b>Производитель</b>: {product['manufacturer']}\n<b>Год выпуска</b>: {product['year']}\n<b>Стоимость</b>: {price} {product['currency']}\n<b>Статус</b>: {product['status']}"
                 try:
                     filtered_lines = [line for line in s.split('\n') if line.split(':')[1] not in (' None', ' ')]
                     logging.info(f'filtered_lines = {filtered_lines}')
@@ -1410,7 +1423,7 @@ async def process_product_navigation(callback_query: CallbackQuery, state: FSMCo
                         MESSAGES = await get_commands_list()
                         s=MESSAGES['no_products_left'][0].replace('<br />', '').replace('<p>', '').replace('</p>', '')
                 else:
-                    s = f"<b>ID товара</b>: {product['id']}\n<b>Название</b>: {product['name']}\n<b>Описание</b>: {product['description']}\n<b>Марка</b>: {product['brand']}\n<b>Модель</b>: {product['product_model']}\n<b>Комплектация</b>: {product['equipment']}\n<b>Производитель</b>: {product['manufacturer']}\n<b>Год выпуска</b>: {product['year']}\n<b>Стоимость</b>: {price} {product['currency']}\n<b>Статус</b>: {product['status']}"
+                    s = f"<b>ID товара</b>: {product['id']}\n<b>Название</b>: {product['name']}\n<b>Колсёсная формула</b>: {product['wheels']}\n<b>Описание</b>: {product['description']}\n<b>Марка</b>: {product['brand']}\n<b>Модель</b>: {product['product_model']}\n<b>Комплектация</b>: {product['equipment']}\n<b>Производитель</b>: {product['manufacturer']}\n<b>Год выпуска</b>: {product['year']}\n<b>Стоимость</b>: {price} {product['currency']}\n<b>Статус</b>: {product['status']}"
                 try:
                     filtered_lines = [line for line in s.split('\n') if line.split(':')[1] not in (' None', ' ')]
                 except:
@@ -1471,7 +1484,7 @@ async def process_brand(callback_query: CallbackQuery, state: FSMContext):
                 media = await get_product_media(str(product['id']))
                 kp = await get_kp_path(product['id'])
                 if photo!=None:
-                    s = f"<b>ID товара</b>: {product['id']}\n<b>Название</b>: {product['name']}\n<b>Описание</b>: {product['description']}\n<b>Марка</b>: {product['brand']}\n<b>Модель</b>: {product['product_model']}\n<b>Комплектация</b>: {product['equipment']}\n<b>Производитель</b>: {product['manufacturer']}\n<b>Год выпуска</b>: {product['year']}\n<b>Стоимость</b>: {price} {product['currency']}\n<b>Статус</b>: {product['status']}"
+                    s = f"<b>ID товара</b>: {product['id']}\n<b>Название</b>: {product['name']}\n<b>Колсёсная формула</b>: {product['wheels']}\n<b>Описание</b>: {product['description']}\n<b>Марка</b>: {product['brand']}\n<b>Модель</b>: {product['product_model']}\n<b>Комплектация</b>: {product['equipment']}\n<b>Производитель</b>: {product['manufacturer']}\n<b>Год выпуска</b>: {product['year']}\n<b>Стоимость</b>: {price} {product['currency']}\n<b>Статус</b>: {product['status']}"
                     try:
                         filtered_lines = [line for line in s.split('\n') if line.split(':')[1] not in (' None', ' ')]
                         logging.info(f'filtered_lines = {filtered_lines}')
@@ -1493,7 +1506,7 @@ async def process_brand(callback_query: CallbackQuery, state: FSMContext):
                             MESSAGES = await get_commands_list()
                             s=MESSAGES['no_products_left'][0].replace('<br />', '').replace('<p>', '').replace('</p>', '')
                     else:
-                        s = f"<b>ID товара</b>: {product['id']}\n<b>Название</b>: {product['name']}\n<b>Описание</b>: {product['description']}\n<b>Марка</b>: {product['brand']}\n<b>Модель</b>: {product['product_model']}\n<b>Комплектация</b>: {product['equipment']}\n<b>Производитель</b>: {product['manufacturer']}\n<b>Год выпуска</b>: {product['year']}\n<b>Стоимость</b>: {price} {product['currency']}\n<b>Статус</b>: {product['status']}"
+                        s = f"<b>ID товара</b>: {product['id']}\n<b>Название</b>: {product['name']}\n<b>Колсёсная формула</b>: {product['wheels']}\n<b>Описание</b>: {product['description']}\n<b>Марка</b>: {product['brand']}\n<b>Модель</b>: {product['product_model']}\n<b>Комплектация</b>: {product['equipment']}\n<b>Производитель</b>: {product['manufacturer']}\n<b>Год выпуска</b>: {product['year']}\n<b>Стоимость</b>: {price} {product['currency']}\n<b>Статус</b>: {product['status']}"
                     try:
                         filtered_lines = [line for line in s.split('\n') if line.split(':')[1] not in (' None', ' ')]
                     except:
@@ -1570,7 +1583,7 @@ async def callback_category(callback_query: CallbackQuery, state: FSMContext):
                     logging.info(f"Сработало get_kp_path 1535: {kp}")
                     if photo!=None:
                         logging.info(f"Сработало условие if photo!=None 1536")
-                        s = f"<b>ID товара</b>: {product['id']}\n<b>Название</b>: {product['name']}\n<b>Описание</b>: {product['description']}\n<b>Марка</b>: {product['brand']}\n<b>Модель</b>: {product['product_model']}\n<b>Комплектация</b>: {product['equipment']}\n<b>Производитель</b>: {product['manufacturer']}\n<b>Год выпуска</b>: {product['year']}\n<b>Стоимость</b>: {price} {product['currency']}\n<b>Статус</b>: {product['status']}"
+                        s = f"<b>ID товара</b>: {product['id']}\n<b>Название</b>: {product['name']}\n<b>Колсёсная формула</b>: {product['wheels']}\n<b>Описание</b>: {product['description']}\n<b>Марка</b>: {product['brand']}\n<b>Модель</b>: {product['product_model']}\n<b>Комплектация</b>: {product['equipment']}\n<b>Производитель</b>: {product['manufacturer']}\n<b>Год выпуска</b>: {product['year']}\n<b>Стоимость</b>: {price} {product['currency']}\n<b>Статус</b>: {product['status']}"
                         logging.info(f's = {s}')
                         try:
                             filtered_lines = [line for line in s.split('\n') if line.split(':')[1] not in (' None', ' ')]
@@ -1595,7 +1608,7 @@ async def callback_category(callback_query: CallbackQuery, state: FSMContext):
                                 MESSAGES = await get_commands_list()
                                 s=MESSAGES['no_products_left'][0].replace('<br />', '').replace('<p>', '').replace('</p>', '')
                         else:
-                            s = f"<b>ID товара</b>: {product['id']}\n<b>Название</b>: {product['name']}\n<b>Описание</b>: {product['description']}\n<b>Марка</b>: {product['brand']}\n<b>Модель</b>: {product['product_model']}\n<b>Комплектация</b>: {product['equipment']}\n<b>Производитель</b>: {product['manufacturer']}\n<b>Год выпуска</b>: {product['year']}\n<b>Стоимость</b>: {price} {product['currency']}\n<b>Статус</b>: {product['status']}"
+                            s = f"<b>ID товара</b>: {product['id']}\n<b>Название</b>: {product['name']}\n<b>Колсёсная формула</b>: {product['wheels']}\n<b>Описание</b>: {product['description']}\n<b>Марка</b>: {product['brand']}\n<b>Модель</b>: {product['product_model']}\n<b>Комплектация</b>: {product['equipment']}\n<b>Производитель</b>: {product['manufacturer']}\n<b>Год выпуска</b>: {product['year']}\n<b>Стоимость</b>: {price} {product['currency']}\n<b>Статус</b>: {product['status']}"
                         try:
                             logging.info(f's = {s}')
                             filtered_lines = [line for line in s.split('\n') if line.split(':')[1] not in (' None', ' ')]

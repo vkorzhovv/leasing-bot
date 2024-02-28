@@ -34,6 +34,7 @@ urlpatterns = [
     path("api/", include("posts.urls")),
     path("api/", include("polls.urls")),
     path("api/", include("bot_statistics.urls")),
+    path("api/", include("xml_import.urls")),
 ]
 
 if settings.DEBUG:
