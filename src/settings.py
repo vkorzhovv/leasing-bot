@@ -106,9 +106,11 @@ WSGI_APPLICATION = "src.wsgi.application"
 # }
 
 
+XML_FOLDER_PATH = os.getenv('XML_FOLDER_PATH')
 DB_NAME = os.getenv('DB_NAME')
 DB_USER_NAME = os.getenv('DB_USER_NAME')
 DB_USER_PASSWORD = os.getenv('DB_USER_PASSWORD')
+DB_HOST = os.getenv('DB_HOST')
 
 DATABASES = {
     'default': {
@@ -116,7 +118,7 @@ DATABASES = {
         'NAME': DB_NAME,
         'USER': DB_USER_NAME,
         'PASSWORD': DB_USER_PASSWORD,
-        'HOST': 'localhost',
+        'HOST': DB_HOST, # 'localhost',
         'PORT': '5432',
     }
 }
@@ -204,7 +206,7 @@ LOGGING = {
     'loggers': {
         'django': {
             'handlers': ['file', 'error_file', 'critical_file'],
-            'level': 'DEBUG',
+            'level': 'INFO',
             'propagate': True,
         },
     },

@@ -2,8 +2,16 @@ import re
 from import_export.resources import modelresource_factory
 import logging
 from src.celery import app
+import sys
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', filename='xml-import.log')
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setLevel(logging.INFO)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+console_handler.setFormatter(formatter)
+logging.getLogger('').addHandler(console_handler)
+
 
 def remove_special_characters(input_string):
     # Используем регулярное выражение для удаления всех символов, кроме букв и цифр
