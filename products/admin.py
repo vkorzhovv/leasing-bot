@@ -102,3 +102,29 @@ class EquipmentAdmin(admin.ModelAdmin):
     list_display = ('name', 'description')
     list_filter = ('name',)
     search_fields = ('name', 'description')
+
+
+
+
+
+# def import_data_from_xml(folder_path, file_name):
+#     from .formats import XML
+#     # Полный путь к XML файлу
+#     xml_file_path = f"{folder_path}/{file_name}"
+
+#     # Создаем экземпляр ресурса
+#     resource = ProductResource()
+
+    
+#     xml_formatter  = XML()
+#     with open(xml_file_path, 'r', encoding='utf-8') as xml_file:
+#         # Создаем dataset из XML данных
+#         data = xml_formatter.create_dataset(xml_file.read())
+
+#     # Импортируем данные из XML файла
+#     dataset = resource.import_data(dataset=data, raise_errors=True)
+#     # Возвращаем результат импорта
+#     return dataset
+
+
+# import_data_from_xml(r'\\LAPTOP-2554OM7H\Users\hp\Desktop\green card', 'data.xml')

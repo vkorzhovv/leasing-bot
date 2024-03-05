@@ -10,7 +10,7 @@ def create_xml_import_settings(request):
     
     # Создаем новый экземпляр модели с заданными значениями
     xml_import_settings = XMLImportSettings.objects.create(
-        folder_path=r'\\10.5.5.5\1c\onlinestore\Телеграм бот',
+        folder_path=r'\\10.5.5.5\1c\onlinestore\TelegramBot',
         file_name='data.xml',
         first_import_time='12:00:00',
         second_import_time='18:00:00'

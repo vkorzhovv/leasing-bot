@@ -59,6 +59,8 @@ INSTALLED_APPS = [
     "import_export",
     "ckeditor",
     "imagekit",
+    "django_celery_beat",
+    "django_celery_results",
 ]
 
 MIDDLEWARE = [
@@ -207,3 +209,11 @@ LOGGING = {
         },
     },
 }
+
+
+
+REDIS_HOST = '127.0.0.1'
+REDIS_PORT = '6379'
+CELERY_BROKER_URL = f'redis://{REDIS_HOST}:{REDIS_PORT}'
+CELERY_BROKER_BACKEND = f'redis://{REDIS_HOST}:{REDIS_PORT}'
+CELERY_BEAT_SCHEDULER='django_celery_beat.schedulers:DatabaseScheduler'
