@@ -53,7 +53,7 @@ class Product(models.Model):
     product_model = models.CharField(max_length=128, null=True, blank=True, verbose_name='Модель')
     name = models.CharField(max_length=128, null=True, blank=True, verbose_name='Название')
     price = models.DecimalField(max_digits=10, decimal_places=2 , null=True, blank=True, verbose_name='Стоимость')
-    photo = models.ImageField(upload_to='images', blank=True, verbose_name='Фотография')
+    photo = models.ImageField(upload_to='share_images/', blank=True, verbose_name='Фотография')
     photo_url = models.CharField(max_length=128, null=True, blank=True, verbose_name='Адрес для яндекс-картинки')
     description = models.TextField(null=True, blank=True, verbose_name='Описание')
     kp = models.FileField('КП', upload_to='kp/', blank=True, null=True)
@@ -102,60 +102,78 @@ class Product(models.Model):
             else:
                 download_url = self.photo_url # например: //SHARE/All/Асеева Алина/Телеграм бот/1_80cc3040-77ce-4f1e-bf08-d83dc4e7ce84.jpeg
                 filename = os.path.basename(download_url)
+                print(filename)
                 extension = download_url.split('.')[-1]
 
-                destination_path = "media\\product_media"  # Укажите путь куда скопировать файл
+                destination_path = "media\\share_images"  # Укажите путь куда скопировать файл
 
-                shutil.copy(download_url, os.path.join(destination_path, filename))
+                try:
+                    shutil.copy(download_url, os.path.join(destination_path, filename))
+                except:
+                    print('shutil error')
 
 
 
             if 'yandex' in self.photo_url or self.photo_url.startswith('http'):
+
+                if filename.split('.')[-1].lower() not in ('jpg', 'jpeg', 'png'):
+                    return
+
                 download_response = requests.get(download_url)
                 file_content = download_response.content
 
 
                 temp_file = File(io.BytesIO(file_content), name=filename)
                 self.photo = temp_file
+
+
                 super().save(*args, **kwargs)
             else:
                 # with open(os.path.join(destination_path, filename), 'rb') as f:
                 #     temp_file = File(f, name=filename)
                 #     self.photo = temp_file
+
+                if filename.split('.')[-1].lower() not in ('jpg', 'jpeg', 'png'):
+                    return
+
                 with open(os.path.join(destination_path, filename), 'rb') as f:
                     file_content = f.read()
 
                     # Создаем временный файл и сохраняем его в модели
                     temp_file = File(io.BytesIO(file_content), name=filename)
                     self.photo = temp_file
-                    super().save(*args, **kwargs)
+
+                
+                super().save(*args, **kwargs)
 
 
+            try:
+                image = cv2.imread(self.photo.path, cv2.IMREAD_COLOR)
+                height, width = image.shape[:2]  
+                print(height, width)   
 
-            image = cv2.imread(self.photo.path, cv2.IMREAD_COLOR)
-            height, width = image.shape[:2]  
-            print(height, width)   
 
+                if height > 1280 or width > 1280:
+                    # Вычисляем масштаб для изменения размеров с сохранением пропорций
+                    scale_factor = min(1280 / height, 1280 / width)
 
-            if height > 1280 or width > 1280:
-                # Вычисляем масштаб для изменения размеров с сохранением пропорций
-                scale_factor = min(1280 / height, 1280 / width)
+                    # Рассчитываем новые размеры с сохранением пропорций
+                    new_height = int(height * scale_factor)
+                    new_width = int(width * scale_factor)
 
-                # Рассчитываем новые размеры с сохранением пропорций
-                new_height = int(height * scale_factor)
-                new_width = int(width * scale_factor)
+                    print(new_width, new_height)
+                    # Изменяем размер изображения до 1280x640
+                    resized_image = cv2.resize(image, (new_width, new_height))
 
-                print(new_width, new_height)
-                # Изменяем размер изображения до 1280x640
-                resized_image = cv2.resize(image, (new_width, new_height))
+                    # Сохраняем измененное изображение во временный буфер
+                    _, buffer = cv2.imencode('.' + extension, resized_image)
+                    temp_file = File(io.BytesIO(buffer.tobytes()), name=filename)
+                    self.photo = temp_file 
 
-                # Сохраняем измененное изображение во временный буфер
-                _, buffer = cv2.imencode('.' + extension, resized_image)
-                temp_file = File(io.BytesIO(buffer.tobytes()), name=filename)
-                self.photo = temp_file 
-
-            elif not (height > 1280 or width > 1280):
-                self.photo = temp_file
+                elif not (height > 1280 or width > 1280):
+                    self.photo = temp_file
+            except:
+                print('ошибка при уменьшении размеров фото')
 
 
 
@@ -190,7 +208,7 @@ class Product(models.Model):
 
 class ProductMedia(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='mediafiles', verbose_name='Товар')
-    media = models.FileField(upload_to='product_media/', blank=True, null=True, verbose_name='Доп. фотки')
+    media = models.FileField(upload_to='share_images/', blank=True, null=True, verbose_name='Доп. фотки')
     media_url = models.CharField(max_length=128, null=True, blank=True, verbose_name='Адрес для яндекс-картинки')
     absolute_media_path = models.CharField(max_length=255, blank=True, verbose_name='Абсолютный путь до медиа')
 
@@ -226,22 +244,33 @@ class ProductMedia(models.Model):
 
                 destination_path = "media\\product_media"  # Укажите путь куда скопировать файл
 
-                shutil.copy(download_url, os.path.join(destination_path, filename))
+                try:
+                    shutil.copy(download_url, os.path.join(destination_path, filename))
+                except:
+                    print('shutil error')
 
 
 
             if 'yandex' in self.media_url or self.media_url.startswith('http'):
                 download_response = requests.get(download_url)
                 file_content = download_response.content
+                if filename.split('.')[-1].lower() not in ('jpg', 'jpeg', 'png'):
+                    return
 
 
                 temp_file = File(io.BytesIO(file_content), name=filename)
                 self.media = temp_file
                 super().save(*args, **kwargs)
+
+            
             else:
                 # with open(os.path.join(destination_path, filename), 'rb') as f:
                 #     temp_file = File(f, name=filename)
                 #     self.photo = temp_file
+
+                if filename.split('.')[-1].lower() not in ('jpg', 'jpeg', 'png'):
+                    return
+
                 with open(os.path.join(destination_path, filename), 'rb') as f:
                     file_content = f.read()
 
@@ -250,13 +279,14 @@ class ProductMedia(models.Model):
                     self.media = temp_file
                     super().save(*args, **kwargs)
 
+
         if self.media:
             self.absolute_media_path = self.get_absolute_media_path()
         return super().save(*args, **kwargs)
 
     def get_absolute_media_path(self):
         media_filename = os.path.basename(self.media.path)
-        return os.path.join(settings.BASE_DIR, 'media', 'product_media', media_filename)
+        return os.path.join(settings.BASE_DIR, 'media', 'share_images', media_filename)
 
 
     def image_preview(self):
@@ -272,3 +302,8 @@ class ProductMedia(models.Model):
 
     def __str__(self):
         return f"Объект ({self.id})"
+
+
+
+
+

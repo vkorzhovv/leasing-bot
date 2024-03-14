@@ -6,7 +6,7 @@ from django.utils.html import mark_safe
 import io
 from import_export.admin import ExportActionModelAdmin, ImportExportModelAdmin
 from import_export.formats.base_formats import DEFAULT_FORMATS
-from products.formats import XML
+from products.formats import XML, XLSX2
 from import_export import resources, fields, widgets
 import openpyxl
 
@@ -86,7 +86,8 @@ class BotUserAdmin(ImportExportModelAdmin):
 
 
     resource_class = ProductResource
-    formats = DEFAULT_FORMATS + [XML]
+    formats = DEFAULT_FORMATS + [XML] + [XLSX2]
+    formats.pop(2)
     list_display = ('image_tag', 'id', 'brand', 'product_model', 'name', 'category', 'category2', 'price', 'year', 'promotion', 'hide', 'created_at', 'updated_at', 'position')
     list_filter = ('brand', 'category', 'product_model', 'name', 'price', 'description', 'year', 'promotion', 'manufacturer', 'status', 'equipment', 'created_at', 'updated_at', 'hide', 'currency', 'promotion_description')
     search_fields = ('brand', 'product_model', 'name')

@@ -1,7 +1,8 @@
 import dicttoxml
-from import_export.formats.base_formats import TextFormat
+from import_export.formats.base_formats import TextFormat, XLSX
 import xmltodict
 import tablib
+from products.models import ProductMedia
 
 
 class XML(TextFormat):
@@ -29,12 +30,34 @@ class XML(TextFormat):
     def can_export(self):
         return True
 
+    # def export_data(self, dataset, **kwargs):
+    #     """
+    #     Returns format representation for given dataset.
+    #     """
+    #     kwargs.setdefault('attr_type', False)
+    #     return dicttoxml.dicttoxml(dataset.dict)
+
     def export_data(self, dataset, **kwargs):
         """
         Returns format representation for given dataset.
         """
-        kwargs.setdefault('attr_type', False)
-        return dicttoxml.dicttoxml(dataset.dict)
+        root_tag = 'Ad'
+        xml_content = f"<Ads>\n"
+        
+        for row in dataset.dict:
+            product_id = row['id']
+            media_urls = ProductMedia.objects.filter(product__id=product_id).values_list('media_url', flat=True)
+            xml_content += "\t<" + root_tag + ">\n"
+            for key, value in row.items():
+                xml_content += f"\t\t<{key}>{value}</{key}>\n"
+            if media_urls:
+                urls = '\n'.join([f'\t\t\t<media url="{url}"/>' for url in media_urls])
+                xml_content += f"\t\t<media_url>\n{urls}\n"+"\t\t</media_url>\n"
+            xml_content += "\t</" + root_tag + ">\n"
+        
+        xml_content += f"</Ads>"
+
+        return xml_content
 
 
     def create_dataset(self, in_stream):
@@ -103,3 +126,37 @@ class XML(TextFormat):
             row_values = [cell.value for cell in row]
             dataset.append(row_values)
         return dataset
+
+
+
+def create_list_from_ordered_dict(data):
+    keys_order = ['id', 'brand', 'category', 'category2', 'product_model', 'name', 'price', 'photo_url', 
+                  'description', 'kp_url', 'year', 'promotion', 'manufacturer', 'status', 'equipment', 
+                  'hide', 'currency', 'species', 'wheels', 'promotion_description', 'position', 'media_url']
+    result = [data[key] for key in keys_order if key in data]
+    return result
+
+class XLSX2(XLSX):
+    def export_data(self, dataset, **kwargs):
+        dataset.headers.append("media_url")
+
+        data = tablib.Dataset()
+        data.headers = dataset.headers
+
+        for row in dataset.dict:
+            product_id = row['id']
+            media_urls = ProductMedia.objects.filter(product__id=product_id).values_list('media_url', flat=True)
+            media_url_value = ','.join(media_urls)
+            row['media_url'] = media_url_value
+            data.append(create_list_from_ordered_dict(row))
+            print(row)
+
+
+        kwargs.pop("escape_output", None)
+        if kwargs.pop("escape_html", None):
+            self._escape_html(dataset)
+        if kwargs.pop("escape_formulae", None):
+            self._escape_formulae(dataset)
+
+
+        return data.export(self.get_title(), **kwargs)
