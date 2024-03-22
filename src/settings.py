@@ -43,6 +43,8 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
 
+    "django_celery_beat",
+
     "bot_users.apps.BotUsersConfig",
     "products.apps.ProductsConfig",
     "categories.apps.CategoriesConfig",
@@ -59,8 +61,7 @@ INSTALLED_APPS = [
     "import_export",
     "ckeditor",
     "imagekit",
-    "django_celery_beat",
-    "django_celery_results",
+    #"django_celery_results",
 ]
 
 MIDDLEWARE = [
@@ -214,8 +215,31 @@ LOGGING = {
 
 
 
-REDIS_HOST = '127.0.0.1'
-REDIS_PORT = '6379'
-CELERY_BROKER_URL = f'redis://{REDIS_HOST}:{REDIS_PORT}'
-CELERY_BROKER_BACKEND = f'redis://{REDIS_HOST}:{REDIS_PORT}'
-CELERY_BEAT_SCHEDULER='django_celery_beat.schedulers:DatabaseScheduler'
+# CELERY_BROKER_URL = 'redis://127.0.0.1:6379'
+# CELERY_ACCEPT_CONTENT = ['application/json']
+# CELERY_RESULT_SERIALIZER = 'json'
+# CELERY_TASK_SERIALIZER = 'json'
+# CELERY_RESULT_BACKEND = 'django-db'
+
+
+# CELERY_BEAT_SCHEDULER='django_celery_beat.schedulers:DatabaseScheduler'
+
+
+#CELERY
+CELERY_BROKER_URL = 'redis://localhost:6379'  # URL для Redis брокера
+CELERY_RESULT_BACKEND = 'redis://localhost:6379'  # URL для Redis бэкенда результатов
+
+
+# Настройки для Celery Beat (периодические задачи)
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+
+
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": f"redis://127.0.0.1:6379/1",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        },
+    }
+}

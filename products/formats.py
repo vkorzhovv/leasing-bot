@@ -3,6 +3,8 @@ from import_export.formats.base_formats import TextFormat, XLSX
 import xmltodict
 import tablib
 from products.models import ProductMedia
+from categories.models import Category
+from xml_import.models import ImportStatistics
 
 
 class XML(TextFormat):
@@ -45,11 +47,15 @@ class XML(TextFormat):
         xml_content = f"<Ads>\n"
         
         for row in dataset.dict:
+            print(row)
             product_id = row['id']
             media_urls = ProductMedia.objects.filter(product__id=product_id).values_list('media_url', flat=True)
             xml_content += "\t<" + root_tag + ">\n"
             for key, value in row.items():
-                xml_content += f"\t\t<{key}>{value}</{key}>\n"
+                if key != 'id':
+                    if key == 'char_id':
+                        key = 'id'
+                    xml_content += f"\t\t<{key}>{value}</{key}>\n"
             if media_urls:
                 urls = '\n'.join([f'\t\t\t<media url="{url}"/>' for url in media_urls])
                 xml_content += f"\t\t<media_url>\n{urls}\n"+"\t\t</media_url>\n"
@@ -69,6 +75,8 @@ class XML(TextFormat):
 
         # Превращаем строку в объект StringIO
         in_stream_as_file = StringIO(in_stream)
+
+        #ImportStatistics.objects.create()
 
 
 
@@ -100,13 +108,17 @@ class XML(TextFormat):
         # xml_df = pd.read_xml(in_stream_as_file)
         xml_df = pd.read_xml(StringIO(xml_string))
 
-        for i, value in enumerate(xml_df['id']):
-            if not str(value).isdigit():  # Проверяем, является ли значение числом
-                xml_df.at[i, 'id'] = ''  # Если значение не число, заменяем его на пустую строку
+        # for i, value in enumerate(xml_df['id']):
+        #     if not str(value).isdigit():  # Проверяем, является ли значение числом
+        #         xml_df.at[i, 'id'] = ''  # Если значение не число, заменяем его на пустую строку
 
         for i, value in enumerate(xml_df['year']):
             if not str(value).isdigit():  # Проверяем, является ли значение числом
                 xml_df.at[i, 'year'] = value[:4]  # Если значение не число, заменяем его на пустую строку
+
+        for i, value in enumerate(xml_df['category']):
+            if not Category.objects.filter(id=value):  
+                xml_df.at[i, 'category'] = ''
 
 
         # Удаляем столбцы <created_at>, <updated_at>, <year>
@@ -121,7 +133,8 @@ class XML(TextFormat):
         dataset = tablib.Dataset()
         sheet = xlsx_book.active
         rows = sheet.rows
-        dataset.headers = [cell.value for cell in next(rows)]
+        dataset.headers = [cell.value if cell.value!='id' else 'char_id' for cell in next(rows)]
+        print(dataset.headers)
         for row in rows:
             row_values = [cell.value for cell in row]
             dataset.append(row_values)
@@ -132,7 +145,7 @@ class XML(TextFormat):
 def create_list_from_ordered_dict(data):
     keys_order = ['id', 'brand', 'category', 'category2', 'product_model', 'name', 'price', 'photo_url', 
                   'description', 'kp_url', 'year', 'promotion', 'manufacturer', 'status', 'equipment', 
-                  'hide', 'currency', 'species', 'wheels', 'promotion_description', 'position', 'media_url']
+                  'hide', 'currency', 'species', 'wheels', 'promotion_description', 'position', 'char_id', 'media_url']
     result = [data[key] for key in keys_order if key in data]
     return result
 
@@ -142,6 +155,7 @@ class XLSX2(XLSX):
 
         data = tablib.Dataset()
         data.headers = dataset.headers
+        print(data.headers)
 
         for row in dataset.dict:
             product_id = row['id']
@@ -149,7 +163,7 @@ class XLSX2(XLSX):
             media_url_value = ','.join(media_urls)
             row['media_url'] = media_url_value
             data.append(create_list_from_ordered_dict(row))
-            print(row)
+
 
 
         kwargs.pop("escape_output", None)
@@ -158,5 +172,5 @@ class XLSX2(XLSX):
         if kwargs.pop("escape_formulae", None):
             self._escape_formulae(dataset)
 
-
+        print(data)
         return data.export(self.get_title(), **kwargs)

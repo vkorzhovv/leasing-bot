@@ -6,9 +6,11 @@ from django.utils.html import mark_safe
 import io
 from import_export.admin import ExportActionModelAdmin, ImportExportModelAdmin
 from import_export.formats.base_formats import DEFAULT_FORMATS
-from products.formats import XML, XLSX2
+from products.formats import XML, XLSX2, create_list_from_ordered_dict
 from import_export import resources, fields, widgets
 import openpyxl
+from xml_import.models import ImportStatistics
+from categories.models import Category
 
 
 
@@ -51,27 +53,47 @@ class ProductResource(resources.ModelResource):
     def __init__(self, **kwargs):
         super(ProductResource, self).__init__(**kwargs)
         self.media_urls = []
+        self.statistics = ImportStatistics.objects.first()
 
     def before_import_row(self, row, row_number=None, **kwargs):
+        print(row['char_id'])
         if 'media_url' in row:
             if row['media_url']!=None:
                 for url in row['media_url'].split(','):
                     self.media_urls.append(url)
 
     def after_save_instance(self, instance, using_transactions, dry_run):
-        ProductMedia.objects.filter(product=instance).delete()
-        for media_url in self.media_urls:
-            ProductMedia(media_url=media_url, product=instance).save()
+        if Product.objects.filter(id=instance.id).exists():
+            ProductMedia.objects.filter(product=instance).delete()
+            for media_url in self.media_urls:
+                try:
+                    ProductMedia(media_url=media_url, product=instance).save()
+                except:
+                    None
         self.media_urls = []
 
     def skip_row(self, instance, original, row, import_validation_errors=None):
         # Проверяем, если у экземпляра пустое поле category
-        if not instance.category:
+        # print('ROW$$$$$$$$$$$$$$$$$$$$$$$$$$:', create_list_from_ordered_dict(row))
+        if (not instance.category) or (import_validation_errors):
+            self.statistics.skipped_info+=f'Артикул: {instance.char_id}, Название: {instance.name}, Марка: {instance.brand}\n'
+            self.statistics.skipped+=1
+            self.statistics.save()
             return True  # Если пусто, игнорируем эту строку
+        if Product.objects.filter(id=instance.id):
+            self.statistics.updated+=1
+            self.statistics.save()
+        else:
+            self.statistics.imported+=1
+            self.statistics.save()
+
+        if import_validation_errors:
+          return True
         return super().skip_row(instance, original, row, import_validation_errors=import_validation_errors)
 
     class Meta:
         model = Product
+        import_id_fields = ("char_id",)
         exclude = ('created_at', 'updated_at', 'photo', 'kp')  # Замените field1, field2 и field3 на реальные имена полей, которые вы хотите исключить
 
 
@@ -88,14 +110,14 @@ class BotUserAdmin(ImportExportModelAdmin):
     resource_class = ProductResource
     formats = DEFAULT_FORMATS + [XML] + [XLSX2]
     formats.pop(2)
-    list_display = ('image_tag', 'id', 'brand', 'product_model', 'name', 'category', 'category2', 'price', 'year', 'promotion', 'hide', 'created_at', 'updated_at', 'position')
+    list_display = ('image_tag', 'id', 'char_id', 'brand', 'product_model', 'name', 'category', 'category2', 'price', 'year', 'promotion', 'hide', 'created_at', 'updated_at', 'position')
     list_filter = ('brand', 'category', 'product_model', 'name', 'price', 'description', 'year', 'promotion', 'manufacturer', 'status', 'equipment', 'created_at', 'updated_at', 'hide', 'currency', 'promotion_description')
     search_fields = ('brand', 'product_model', 'name')
     ordering = ('-created_at',)
     list_editable = ('promotion',)
     list_display_links = ('id', 'brand', 'product_model')
     inlines = [PostMediaInline]
-    readonly_fields = ['image_tag']
+    readonly_fields = ['char_id', 'image_tag']
 
 
 @admin.register(Equipment)
@@ -103,6 +125,7 @@ class EquipmentAdmin(admin.ModelAdmin):
     list_display = ('name', 'description')
     list_filter = ('name',)
     search_fields = ('name', 'description')
+
 
 
 

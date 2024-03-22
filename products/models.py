@@ -14,6 +14,7 @@ from PIL import Image
 import cv2
 import shutil
 from django.conf import settings
+import uuid
 
 class Equipment(models.Model):
     name = models.CharField(max_length=64, verbose_name='Название')
@@ -72,127 +73,136 @@ class Product(models.Model):
     wheels = models.CharField(max_length=64, blank=True, null=True, verbose_name='Колёсная формула')
     promotion_description = models.TextField(null=True, blank=True, verbose_name='Описание акции')
     position = models.PositiveIntegerField(null=True, blank=True, verbose_name='Номер позиции в категории')
+    char_id = models.CharField(blank=True, null=True, editable=False, verbose_name='Артикул', unique=True)
+
 
     def save(self, *args, **kwargs):
 
-        if self.photo_url:
-            if 'yandex' in self.photo_url:
+        try:
+
+            if self.photo_url:
+                if 'yandex' in self.photo_url:
+                    base_url = 'https://cloud-api.yandex.net/v1/disk/public/resources/download?'
+                    public_key = self.photo_url
+
+                    final_url = base_url + urlencode(dict(public_key=public_key))
+                    response = requests.get(final_url)
+                    download_url = response.json()['href']
+                    parsed_url = urlparse(download_url)
+                    filename = unquote(parsed_url.query.split("&filename=")[1].split("&")[0])
+                    splitted = filename.split('.')
+                    extension = splitted[-1]
+                    name = '.'.join(splitted[0:-1])
+                    filename = remove_special_characters(name)
+                    filename = filename+'.'+extension
+
+
+                elif self.photo_url.startswith('http') and 'yandex' not in self.photo_url:
+                    download_url = self.photo_url
+                    parsed_url = urlparse(download_url)
+                    filename = parsed_url.path.split('/')[-1]
+                    extension = filename.split('.')[-1]
+
+
+                else:
+                    download_url = self.photo_url # например: //SHARE/All/Асеева Алина/Телеграм бот/1_80cc3040-77ce-4f1e-bf08-d83dc4e7ce84.jpeg
+                    filename = os.path.basename(download_url)
+                    print(filename)
+                    extension = download_url.split('.')[-1]
+
+                    destination_path = "media/share_images"  # Укажите путь куда скопировать файл
+
+                    try:
+                        shutil.copy(download_url, os.path.join(destination_path, filename))
+                    except:
+                        None
+
+
+
+                if 'yandex' in self.photo_url or self.photo_url.startswith('http'):
+
+                    if filename.split('.')[-1].lower() not in ('jpg', 'jpeg', 'png'):
+                        return
+
+                    download_response = requests.get(download_url)
+                    file_content = download_response.content
+
+
+                    temp_file = File(io.BytesIO(file_content), name=filename)
+                    self.photo = temp_file
+
+
+                    super().save(*args, **kwargs)
+                else:
+                    # with open(os.path.join(destination_path, filename), 'rb') as f:
+                    #     temp_file = File(f, name=filename)
+                    #     self.photo = temp_file
+
+                    if filename.split('.')[-1].lower() not in ('jpg', 'jpeg', 'png'):
+                        return
+
+                    with open(os.path.join(destination_path, filename), 'rb') as f:
+                        file_content = f.read()
+
+                        # Создаем временный файл и сохраняем его в модели
+                        temp_file = File(io.BytesIO(file_content), name=filename)
+                        self.photo = temp_file
+            
+
+                    
+                    super().save(*args, **kwargs)
+
+
+                try:
+                    image = cv2.imread(self.photo.path, cv2.IMREAD_COLOR)
+                    height, width = image.shape[:2]  
+                    print(height, width)   
+
+
+                    if height > 1280 or width > 1280:
+                        # Вычисляем масштаб для изменения размеров с сохранением пропорций
+                        scale_factor = min(1280 / height, 1280 / width)
+
+                        # Рассчитываем новые размеры с сохранением пропорций
+                        new_height = int(height * scale_factor)
+                        new_width = int(width * scale_factor)
+
+                        print(new_width, new_height)
+                        # Изменяем размер изображения до 1280x640
+                        resized_image = cv2.resize(image, (new_width, new_height))
+
+                        # Сохраняем измененное изображение во временный буфер
+                        _, buffer = cv2.imencode('.' + extension, resized_image)
+                        temp_file = File(io.BytesIO(buffer.tobytes()), name=filename)
+                        self.photo = temp_file 
+
+                    elif not (height > 1280 or width > 1280):
+                        self.photo = temp_file
+                except:
+                    print('ошибка при уменьшении размеров фото')
+
+
+
+            if self.kp_url:
                 base_url = 'https://cloud-api.yandex.net/v1/disk/public/resources/download?'
-                public_key = self.photo_url
+                public_key = self.kp_url
 
                 final_url = base_url + urlencode(dict(public_key=public_key))
                 response = requests.get(final_url)
                 download_url = response.json()['href']
                 parsed_url = urlparse(download_url)
                 filename = unquote(parsed_url.query.split("&filename=")[1].split("&")[0])
-                splitted = filename.split('.')
-                extension = splitted[-1]
-                name = '.'.join(splitted[0:-1])
-                filename = remove_special_characters(name)
-                filename = filename+'.'+extension
-
-
-            elif self.photo_url.startswith('http'):
-                download_url = self.photo_url
-                parsed_url = urlparse(download_url)
-                filename = parsed_url.path.split('/')[-1]
-                extension = filename.split('.')[-1]
-
-
-            else:
-                download_url = self.photo_url # например: //SHARE/All/Асеева Алина/Телеграм бот/1_80cc3040-77ce-4f1e-bf08-d83dc4e7ce84.jpeg
-                filename = os.path.basename(download_url)
-                print(filename)
-                extension = download_url.split('.')[-1]
-
-                destination_path = "media\\share_images"  # Укажите путь куда скопировать файл
-
-                try:
-                    shutil.copy(download_url, os.path.join(destination_path, filename))
-                except:
-                    print('shutil error')
-
-
-
-            if 'yandex' in self.photo_url or self.photo_url.startswith('http'):
-
-                if filename.split('.')[-1].lower() not in ('jpg', 'jpeg', 'png'):
-                    return
-
                 download_response = requests.get(download_url)
-                file_content = download_response.content
-
+                file_content = download_response.ContentTypes
 
                 temp_file = File(io.BytesIO(file_content), name=filename)
-                self.photo = temp_file
+                self.kp = temp_file
 
+            super().save(*args, **kwargs)
 
-                super().save(*args, **kwargs)
-            else:
-                # with open(os.path.join(destination_path, filename), 'rb') as f:
-                #     temp_file = File(f, name=filename)
-                #     self.photo = temp_file
+        except Exception:
+            return  # Просто возвращаемся из метода, не вызывая сохранение
 
-                if filename.split('.')[-1].lower() not in ('jpg', 'jpeg', 'png'):
-                    return
-
-                with open(os.path.join(destination_path, filename), 'rb') as f:
-                    file_content = f.read()
-
-                    # Создаем временный файл и сохраняем его в модели
-                    temp_file = File(io.BytesIO(file_content), name=filename)
-                    self.photo = temp_file
-
-                
-                super().save(*args, **kwargs)
-
-
-            try:
-                image = cv2.imread(self.photo.path, cv2.IMREAD_COLOR)
-                height, width = image.shape[:2]  
-                print(height, width)   
-
-
-                if height > 1280 or width > 1280:
-                    # Вычисляем масштаб для изменения размеров с сохранением пропорций
-                    scale_factor = min(1280 / height, 1280 / width)
-
-                    # Рассчитываем новые размеры с сохранением пропорций
-                    new_height = int(height * scale_factor)
-                    new_width = int(width * scale_factor)
-
-                    print(new_width, new_height)
-                    # Изменяем размер изображения до 1280x640
-                    resized_image = cv2.resize(image, (new_width, new_height))
-
-                    # Сохраняем измененное изображение во временный буфер
-                    _, buffer = cv2.imencode('.' + extension, resized_image)
-                    temp_file = File(io.BytesIO(buffer.tobytes()), name=filename)
-                    self.photo = temp_file 
-
-                elif not (height > 1280 or width > 1280):
-                    self.photo = temp_file
-            except:
-                print('ошибка при уменьшении размеров фото')
-
-
-
-        if self.kp_url:
-            base_url = 'https://cloud-api.yandex.net/v1/disk/public/resources/download?'
-            public_key = self.kp_url
-
-            final_url = base_url + urlencode(dict(public_key=public_key))
-            response = requests.get(final_url)
-            download_url = response.json()['href']
-            parsed_url = urlparse(download_url)
-            filename = unquote(parsed_url.query.split("&filename=")[1].split("&")[0])
-            download_response = requests.get(download_url)
-            file_content = download_response.ContentTypes
-
-            temp_file = File(io.BytesIO(file_content), name=filename)
-            self.kp = temp_file
-
-        super().save(*args, **kwargs)
 
 
     def __str__(self):
@@ -302,6 +312,8 @@ class ProductMedia(models.Model):
 
     def __str__(self):
         return f"Объект ({self.id})"
+
+
 
 
 

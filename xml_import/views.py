@@ -1,7 +1,8 @@
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from .models import XMLImportSettings
+from .models import XMLImportSettings, ImportStatistics
 from django.conf import settings
+from django.shortcuts import render
 
 @csrf_exempt
 def create_xml_import_settings(request):
@@ -29,3 +30,9 @@ def make_xml_import(request):
         return JsonResponse({'message': 'Товары успешно импортированы'}, status=201)
     except:
         return JsonResponse({'message': 'Импортировать товары не удалось'}, status=201)
+
+
+
+def import_statistics_view(request):
+    statistics = ImportStatistics.objects.all()
+    return render(request, 'xml_import/import_statistics.html', {'statistics': statistics})

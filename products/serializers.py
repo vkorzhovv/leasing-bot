@@ -9,7 +9,7 @@ class ProductListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Product
-        fields = ('id', 'category', 'category2', 'brand', 'kp', 'photo', 'name', 'description', 'price', 'product_model', 'year', 'equipment', 'manufacturer', 'status', 'currency', 'hide', 'promotion', 'promotion_description', 'position', 'wheels', 'species')
+        fields = ('id', 'char_id', 'category', 'category2', 'brand', 'kp', 'photo', 'name', 'description', 'price', 'product_model', 'year', 'equipment', 'manufacturer', 'status', 'currency', 'hide', 'promotion', 'promotion_description', 'position', 'wheels', 'species')
 
     def get_status(self, obj):
         # Ваша логика для получения display_status на основе obj.status
