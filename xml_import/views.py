@@ -28,9 +28,8 @@ def make_xml_import(request):
     try:
         import_data_from_xml()
         return JsonResponse({'message': 'Товары успешно импортированы'}, status=201)
-    except:
-        return JsonResponse({'message': 'Импортировать товары не удалось'}, status=201)
-
+    except Exception as e:
+        return JsonResponse({'message': f'Импортировать товары не удалось: {str(e)}'}, status=500)
 
 
 def import_statistics_view(request):

@@ -252,7 +252,7 @@ class ProductMedia(models.Model):
                 filename = os.path.basename(download_url)
                 extension = download_url.split('.')[-1]
 
-                destination_path = "media\\product_media"  # Укажите путь куда скопировать файл
+                destination_path = "media/product_media"  # Укажите путь куда скопировать файл
 
                 try:
                     shutil.copy(download_url, os.path.join(destination_path, filename))
