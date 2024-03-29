@@ -73,7 +73,7 @@ class Product(models.Model):
     wheels = models.CharField(max_length=64, blank=True, null=True, verbose_name='Колёсная формула')
     promotion_description = models.TextField(null=True, blank=True, verbose_name='Описание акции')
     position = models.PositiveIntegerField(null=True, blank=True, verbose_name='Номер позиции в категории')
-    char_id = models.CharField(blank=True, null=True, editable=False, verbose_name='Артикул', unique=True)
+    char_id = models.CharField(max_length=128, blank=True, null=True, editable=False, verbose_name='Артикул', unique=True)
 
 
     def save(self, *args, **kwargs):

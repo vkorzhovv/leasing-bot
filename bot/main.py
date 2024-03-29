@@ -738,7 +738,7 @@ async def cmd_catalog(message: types.Message, state: FSMContext) -> None:
 
         elif message.text=='Акции':
             data_list = await get_promotions_list()
-            data_list = data_list + [{'name': 'Товары закончились', 'promotion_description': None, 'promotion': None, 'price': None, 'id': None, 'description': None, 'brand': None, 'product_model': None, 'equipment': None, 'manufacturer': None, 'year': None, 'currency': None, 'status': None}]
+            data_list = data_list + [{'name': 'Товары закончились', 'promotion_description': None, 'promotion': None, 'price': None, 'id': None, 'description': None, 'brand': None, 'product_model': None, 'equipment': None, 'manufacturer': None, 'year': None, 'currency': None, 'status': None, 'category': None}]
             a = await bot.send_message(message.from_user.id, "OK", reply_markup=ReplyKeyboardRemove())
             await bot.delete_message(message.chat.id, a.message_id)
             logging.info(f"Телеграм-пользователь {message.from_user.username} просматривает акции")
@@ -837,12 +837,22 @@ async def callback_chat_with_manager(callback_query: CallbackQuery):
         text = callback_query.message.caption
         product_id = text.split('\n')[0].split(': ')[1]
         product = text.split('\n')[1]
+        product_link = f"{domen}admin/products/product/{product_id}/change/"
     else:
         text = callback_query.message.text
-        product_id = text.split('\n')[0].split(': ')[1]
-        product = text.split('\n')[1]
+        if text.split('\n')[-1]=='Акция!':
+            product_id='акция'
+            product = 'Акции'
+            product_link = f"{domen}admin/products/product/"
+        else:
+            product_id = text.split('\n')[0].split(': ')[1]
+            product = text.split('\n')[1]
+            if product_id.isdigit():
+                product_link = f"{domen}admin/products/product/{product_id}/change/"
+            else:
+                product_link = f"{domen}admin/products/product/"
 
-    product_link = f"{domen}admin/products/product/{product_id}/change/"
+        
     logging.info(f"Телеграм-пользователь {callback_query.from_user.username} нажал на 'Чат с менеджером'")
     product_manager = await get_manager(product_id) # {'username': 'dbte5_py', 'phone': '+77473789020'}
     print(product_manager)
@@ -1362,11 +1372,11 @@ async def process_product_navigation(callback_query: CallbackQuery, state: FSMCo
                 if product['name']=='Товары закончились':
                     MESSAGES = await get_commands_list()
                     if 'no_products_left' in MESSAGES:
-                        s=MESSAGES['no_products_left'][0].replace('<br />', '').replace('<p>', '').replace('</p>', '')
+                        s='ID: '+str(product['id'])+'\n'+MESSAGES['no_products_left'][0].replace('<br />', '').replace('<p>', '').replace('</p>', '')
                     else:
                         await create_command(key='no_products_left', text='Не нашли то, что искали? Свяжитесь с нашим менеджером!')
                         MESSAGES = await get_commands_list()
-                        s=MESSAGES['no_products_left'][0].replace('<br />', '').replace('<p>', '').replace('</p>', '')
+                        s='ID: '+str(product['id'])+'\n'+MESSAGES['no_products_left'][0].replace('<br />', '').replace('<p>', '').replace('</p>', '')
                 else:
                     s = f"<b>ID товара</b>: {product['char_id']}\n<b>Название</b>: {product['name']}\n<b>Колсёсная формула</b>: {product['wheels']}\n<b>Описание</b>: {product['description']}\n<b>Марка</b>: {product['brand']}\n<b>Модель</b>: {product['product_model']}\n<b>Комплектация</b>: {product['equipment']}\n<b>Производитель</b>: {product['manufacturer']}\n<b>Год выпуска</b>: {product['year']}\n<b>Стоимость</b>: {price} {product['currency']}\n<b>Статус</b>: {product['status']}"
                     try:
@@ -1417,11 +1427,11 @@ async def process_product_navigation(callback_query: CallbackQuery, state: FSMCo
                 if product['name']=='Товары закончились':
                     MESSAGES = await get_commands_list()
                     if 'no_products_left' in MESSAGES:
-                        s=MESSAGES['no_products_left'][0].replace('<br />', '').replace('<p>', '').replace('</p>', '')
+                        s='ID: '+str(product['id'])+'\n'+MESSAGES['no_products_left'][0].replace('<br />', '').replace('<p>', '').replace('</p>', '')
                     else:
                         await create_command(key='no_products_left', text='Не нашли то, что искали? Свяжитесь с нашим менеджером!')
                         MESSAGES = await get_commands_list()
-                        s=MESSAGES['no_products_left'][0].replace('<br />', '').replace('<p>', '').replace('</p>', '')
+                        s='ID: '+str(product['id'])+'\n'+MESSAGES['no_products_left'][0].replace('<br />', '').replace('<p>', '').replace('</p>', '')
                 else:
                     s = f"<b>ID товара</b>: {product['char_id']}\n<b>Название</b>: {product['name']}\n<b>Колсёсная формула</b>: {product['wheels']}\n<b>Описание</b>: {product['description']}\n<b>Марка</b>: {product['brand']}\n<b>Модель</b>: {product['product_model']}\n<b>Комплектация</b>: {product['equipment']}\n<b>Производитель</b>: {product['manufacturer']}\n<b>Год выпуска</b>: {product['year']}\n<b>Стоимость</b>: {price} {product['currency']}\n<b>Статус</b>: {product['status']}"
                 try:
@@ -1462,8 +1472,11 @@ async def process_brand(callback_query: CallbackQuery, state: FSMContext):
                 d['wheels'] == filters[1]):
                 filtered_data_list.append(d)
 
-
-        filtered_data_list = filtered_data_list + [{'name': 'Товары закончились', 'promotion': None, 'price': None, 'id': None, 'description': None, 'brand': None, 'product_model': None, 'equipment': None, 'manufacturer': None, 'year': None, 'currency': None, 'status': None}]
+        if len(filtered_data_list)>0:
+            pr_id = filtered_data_list[0]['id']
+        else:
+            pr_id = 'поиск'
+        filtered_data_list = filtered_data_list + [{'name': 'Товары закончились', 'promotion': None, 'price': None, 'id': pr_id, 'description': None, 'brand': None, 'product_model': None, 'equipment': None, 'manufacturer': None, 'year': None, 'currency': None, 'status': None}]
         if filtered_data_list:
             # Сохраняем список продуктов и текущий индекс элемента в FSM
             async with state.proxy() as data:
@@ -1500,11 +1513,11 @@ async def process_brand(callback_query: CallbackQuery, state: FSMContext):
                     if product['name']=='Товары закончились':
                         MESSAGES = await get_commands_list()
                         if 'no_products_left' in MESSAGES:
-                            s=MESSAGES['no_products_left'][0].replace('<br />', '').replace('<p>', '').replace('</p>', '')
+                            s='ID: '+str(product['id'])+'\n'+MESSAGES['no_products_left'][0].replace('<br />', '').replace('<p>', '').replace('</p>', '')
                         else:
                             await create_command(key='no_products_left', text='Не нашли то, что искали? Свяжитесь с нашим менеджером!')
                             MESSAGES = await get_commands_list()
-                            s=MESSAGES['no_products_left'][0].replace('<br />', '').replace('<p>', '').replace('</p>', '')
+                            s='ID: '+str(product['id'])+'\n'+MESSAGES['no_products_left'][0].replace('<br />', '').replace('<p>', '').replace('</p>', '')
                     else:
                         s = f"<b>ID товара</b>: {product['char_id']}\n<b>Название</b>: {product['name']}\n<b>Колсёсная формула</b>: {product['wheels']}\n<b>Описание</b>: {product['description']}\n<b>Марка</b>: {product['brand']}\n<b>Модель</b>: {product['product_model']}\n<b>Комплектация</b>: {product['equipment']}\n<b>Производитель</b>: {product['manufacturer']}\n<b>Год выпуска</b>: {product['year']}\n<b>Стоимость</b>: {price} {product['currency']}\n<b>Статус</b>: {product['status']}"
                     try:
@@ -1555,7 +1568,11 @@ async def callback_category(callback_query: CallbackQuery, state: FSMContext):
             # b = await increment_category_views(str(category_id))
             data_list = await get_products_list(category_id=category_id)
             logging.info(f"Сработала get_products_list 1508")
-            data_list = data_list+[{'name': 'Товары закончились', 'promotion': None, 'price': None, 'id': None, 'description': None, 'brand': None, 'product_model': None, 'equipment': None, 'manufacturer': None, 'year': None, 'currency': None, 'status': None}]
+            if len(data_list)>0:
+                pr_id = data_list[0]['id']
+            else:
+                pr_id = 'каталог'
+            data_list = data_list+[{'name': 'Товары закончились', 'promotion': None, 'price': None, 'id': pr_id, 'description': None, 'brand': None, 'product_model': None, 'equipment': None, 'manufacturer': None, 'year': None, 'currency': None, 'status': None}]
 
             if data_list:
                 logging.info(f"Сработало условие if data_list 1512")
@@ -1600,13 +1617,14 @@ async def callback_category(callback_query: CallbackQuery, state: FSMContext):
                     else:
                         logging.info(f"Сработало условие if photo==None 1545")
                         if product['name']=='Товары закончились':
+                            print('CHEEEEEEEEEEECK()&(797979&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&)')
                             MESSAGES = await get_commands_list()
                             if 'no_products_left' in MESSAGES:
-                                s=MESSAGES['no_products_left'][0].replace('<br />', '').replace('<p>', '').replace('</p>', '')
+                                s='ID: '+str(product['id'])+'\n'+MESSAGES['no_products_left'][0].replace('<br />', '').replace('<p>', '').replace('</p>', '')
                             else:
                                 await create_command(key='no_products_left', text='Не нашли то, что искали? Свяжитесь с нашим менеджером!')
                                 MESSAGES = await get_commands_list()
-                                s=MESSAGES['no_products_left'][0].replace('<br />', '').replace('<p>', '').replace('</p>', '')
+                                s='ID: '+str(product['id'])+'\n'+MESSAGES['no_products_left'][0].replace('<br />', '').replace('<p>', '').replace('</p>', '')
                         else:
                             s = f"<b>ID товара</b>: {product['char_id']}\n<b>Название</b>: {product['name']}\n<b>Колсёсная формула</b>: {product['wheels']}\n<b>Описание</b>: {product['description']}\n<b>Марка</b>: {product['brand']}\n<b>Модель</b>: {product['product_model']}\n<b>Комплектация</b>: {product['equipment']}\n<b>Производитель</b>: {product['manufacturer']}\n<b>Год выпуска</b>: {product['year']}\n<b>Стоимость</b>: {price} {product['currency']}\n<b>Статус</b>: {product['status']}"
                         try:

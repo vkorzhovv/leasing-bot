@@ -16,7 +16,7 @@ class Migration(migrations.Migration):
             model_name="product",
             name="char_id",
             field=models.CharField(
-                blank=True, editable=False, null=True, verbose_name="Текстовый ID"
+                max_length=128, blank=True, editable=False, null=True, verbose_name="Текстовый ID"
             ),
         ),
     ]

@@ -1,6 +1,6 @@
 from celery import shared_task
-import sys
 import logging
+import sys
 
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')

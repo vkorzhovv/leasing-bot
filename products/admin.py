@@ -75,17 +75,18 @@ class ProductResource(resources.ModelResource):
     def skip_row(self, instance, original, row, import_validation_errors=None):
         # Проверяем, если у экземпляра пустое поле category
         # print('ROW$$$$$$$$$$$$$$$$$$$$$$$$$$:', create_list_from_ordered_dict(row))
-        if (not instance.category) or (import_validation_errors):
-            self.statistics.skipped_info+=f'Артикул: {instance.char_id}, Название: {instance.name}, Марка: {instance.brand}\n'
-            self.statistics.skipped+=1
-            self.statistics.save()
-            return True  # Если пусто, игнорируем эту строку
-        if Product.objects.filter(id=instance.id):
-            self.statistics.updated+=1
-            self.statistics.save()
-        else:
-            self.statistics.imported+=1
-            self.statistics.save()
+        if self.statistics:
+            if (not instance.category) or (import_validation_errors):
+                self.statistics.skipped_info+=f'Артикул: {instance.char_id}, Название: {instance.name}, Марка: {instance.brand}\n'
+                self.statistics.skipped+=1
+                self.statistics.save()
+                return True  # Если пусто, игнорируем эту строку
+            if Product.objects.filter(id=instance.id):
+                self.statistics.updated+=1
+                self.statistics.save()
+            else:
+                self.statistics.imported+=1
+                self.statistics.save()
 
         if import_validation_errors:
           return True

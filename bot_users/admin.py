@@ -54,13 +54,10 @@ class ExtendedUserInline(admin.StackedInline):
 
 
 class CustomUserAdmin(UserAdmin):
-    list_display = ('username', 'email', 'is_staff', 'is_superuser', 'bot_user_info', 'bot_user_id_info', 'bot_user_category')
+    list_display = ('username', 'email', 'is_staff', 'is_superuser', 'bot_user_info', 'bot_user_id_info')
 
     def bot_user_info(self, obj):
         return obj.extended_user.bot_user if obj.extended_user else None
-
-    def bot_user_category(self, obj):
-        return obj.extended_user.category if obj.extended_user.category else None
 
     def bot_user_id_info(self, obj):
         try:
