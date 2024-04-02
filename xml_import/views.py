@@ -13,9 +13,7 @@ def create_xml_import_settings(request):
     # Создаем новый экземпляр модели с заданными значениями
     xml_import_settings = XMLImportSettings.objects.create(
         folder_path=settings.XML_FOLDER_PATH,
-        file_name='data.xml',
-        first_import_time='12:00:00',
-        second_import_time='18:00:00'
+        file_name='data.xml'
     )
 
     return JsonResponse({'message': 'Экземпляр модели успешно создан'}, status=201)

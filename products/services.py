@@ -3,6 +3,8 @@ from import_export.resources import modelresource_factory
 import logging
 from src.celery import app
 import sys
+from celery import shared_task
+
 
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -62,3 +64,6 @@ def import_data_from_xml(*args):
 
     # Возвращаем результат импорта
     return dataset
+
+
+# import_data_from_xml(r'\\LAPTOP-2554OM7H\Users\hp\Desktop\green card', 'data.xml')
