@@ -47,7 +47,6 @@ class XML(TextFormat):
         xml_content = f"<Ads>\n"
         
         for row in dataset.dict:
-            print(row)
             product_id = row['id']
             media_urls = ProductMedia.objects.filter(product__id=product_id).values_list('media_url', flat=True)
             xml_content += "\t<" + root_tag + ">\n"
@@ -87,10 +86,29 @@ class XML(TextFormat):
 
         # Проход по каждому элементу <Ad>
         for ad in root.findall('.//Ad'):
+            photo_url_element = ad.find('photo_url')
+            if photo_url_element is not None:
+                # Установка нового значения для элемента photo_url
+                photo_url_text = photo_url_element.text
+                if  'http://avito.it42' in photo_url_text:
+                    if photo_url_text.split('/')[-1]=='':
+                        photo_url_text = photo_url_text.split('/')[-2]
+                    else:
+                        photo_url_text = photo_url_text.split('/')[-1]
+                    photo_url_text = '/app/media/share_images/'+photo_url_text
+                    photo_url_element.text = photo_url_text
+
             media_urls = []
             # Получение всех URL медиа из элемента <media_url>
             for media_url in ad.findall('.//media_url/media'):
-                media_urls.append(media_url.get('url'))
+                url = media_url.get('url')
+                if 'http://avito.it42' in url:
+                    if url.split('/')[-1]=='':
+                        url = url.split('/')[-2]
+                    else:
+                        url = url.split('/')[-1]
+                    url = '/app/media/share_images/'+url
+                media_urls.append(url)
                 # Удаление дочерних элементов <media>
                 ad.find('.//media_url').remove(media_url)
             # Объединение URL медиа в одну строку через пробел
@@ -134,7 +152,6 @@ class XML(TextFormat):
         sheet = xlsx_book.active
         rows = sheet.rows
         dataset.headers = [cell.value if cell.value!='id' else 'char_id' for cell in next(rows)]
-        print(dataset.headers)
         for row in rows:
             row_values = [cell.value for cell in row]
             dataset.append(row_values)
@@ -155,7 +172,6 @@ class XLSX2(XLSX):
 
         data = tablib.Dataset()
         data.headers = dataset.headers
-        print(data.headers)
 
         for row in dataset.dict:
             product_id = row['id']
@@ -172,5 +188,4 @@ class XLSX2(XLSX):
         if kwargs.pop("escape_formulae", None):
             self._escape_formulae(dataset)
 
-        print(data)
         return data.export(self.get_title(), **kwargs)
