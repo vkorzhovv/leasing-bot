@@ -15,6 +15,7 @@ class BotUser(models.Model):
     last_interaction = models.DateTimeField(null=True, blank=True, verbose_name='Последняя активность')
     manager = models.BooleanField(default=False, verbose_name='Менеджер')
     city = models.CharField(max_length=64, blank=True, null=True, verbose_name='Город')
+    last_viewed_category_id = models.CharField(max_length=10, blank=True, null=True, verbose_name='ID последней просмотренной категории')
 
     def __str__(self):
         return f'{self.name}({self.company_name})'

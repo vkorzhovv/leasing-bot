@@ -306,3 +306,30 @@ class BotUserSearchByIdView(APIView):
 @login_required(login_url='/admin/login/')
 def dashboard_view(request):
     return render(request, 'bot_users/dashboard.html')
+
+
+
+@api_view(['GET'])
+def update_last_viewed_category(request, user_id, category_id=None):
+    try:
+        user = BotUser.objects.get(user_id=user_id)
+        if category_id is not None:
+            user.last_viewed_category_id = category_id
+            user.save()
+            return Response({'success': True})
+        else:
+            return Response({'success': False, 'error': 'Category ID is missing'})
+    except BotUser.DoesNotExist:
+        return Response({'success': False, 'error': 'User not found'})
+
+
+
+@api_view(['GET'])
+def get_last_viewed_category(request, user_id):
+    try:
+        user = BotUser.objects.get(user_id=user_id)
+        last_viewed_category_id = user.last_viewed_category_id
+        product_id = Product.objects.filter(category__id=last_viewed_category_id).first().id
+        return Response({'last_viewed_category_product_id': product_id})
+    except BotUser.DoesNotExist:
+        return Response({'error': 'User not found'})

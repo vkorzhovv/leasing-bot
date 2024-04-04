@@ -15,4 +15,6 @@ urlpatterns = [
     path('bot_user/search/<str:username>/', BotUserSearchView.as_view(), name='bot-user-search'),
     path('bot_user_id/search/<str:user_id>/', BotUserSearchByIdView.as_view(), name='bot-user-search_by_id'),
     path('product_managers/', ProductManagerListView.as_view(), name='product-managers-list'),
+    path('update_last_viewed_category/<str:user_id>/<str:category_id>/', update_last_viewed_category, name='update_last_viewed_category'),
+    path('get_last_viewed_category/<str:user_id>/', get_last_viewed_category, name='get_last_viewed_category'),
 ]

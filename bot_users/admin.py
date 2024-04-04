@@ -18,6 +18,7 @@ class BotUserAdmin(ExportActionModelAdmin):
     list_filter = ('phone', 'activated')
     search_fields = ('name', 'company_name', 'phone')
     ordering = ('-created_at',)
+    readonly_fields = ('last_viewed_category_id',)
 
 
     def save_model(self, request, obj, form, change):

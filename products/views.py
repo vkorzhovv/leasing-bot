@@ -33,7 +33,10 @@ class ProductMediaListView(ListAPIView):
 
     def get_queryset(self):
         product_id = self.kwargs['product_id']  # Получаем id продукта из URL
-        return ProductMedia.objects.filter(product_id=product_id)
+        if product_id.isdigit():
+            return ProductMedia.objects.filter(product_id=product_id)
+        else:
+            return ProductMedia.objects.filter(product__char_id=product_id)
 
 
 

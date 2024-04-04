@@ -1024,6 +1024,29 @@ async def get_manager(product_id):
             return data
 
 
+async def update_last_viewed_category(user_id, category_id):
+    auth = aiohttp.BasicAuth(admin_username, admin_password)
+    async with aiohttp.ClientSession(auth=auth) as session:
+        async with session.get(f'{domen}api/update_last_viewed_category/{user_id}/{category_id}/') as response:
+            if response.status == 200:
+                data = await response.json()
+                if data['success']:
+                    return data
+            else:
+                return response
+
+
+
+async def get_last_viewed_category(user_id):
+    auth = aiohttp.BasicAuth(admin_username, admin_password)
+    async with aiohttp.ClientSession(auth=auth) as session:
+        async with session.get(f'{domen}api/get_last_viewed_category/{user_id}/') as response:
+            if response.status == 200:
+                data = await response.json()
+                return str(data['last_viewed_category_product_id'])
+            else:
+                return None
+
 
 
 
@@ -1031,7 +1054,7 @@ async def some_async_function():
     # Ваш код, где вы хотите вызвать функцию get_categories_list()
     #a = await do_poll_mailing(poll_id='1', options=[('1', 'Первый'), ('2', 'Второй')], title='Что лучше?', media_paths=[r'C:\Users\hp\Desktop\job\media\GettyImages-531906282-5eb4b86361a94e8ebb72e26dbba44aa4_AhwE7Zv.jpg'])
     # a = await get_botusers()
-    print(await get_manager('1'))
+    print(await get_product_media('2'))
 
 if __name__ == "__main__":
     asyncio.run(some_async_function())
