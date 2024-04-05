@@ -760,6 +760,7 @@ async def cmd_catalog(message: types.Message, state: FSMContext) -> None:
                     if not photo:
                         if promotion['name']=='Товары закончились':
                             MESSAGES = await get_commands_list()
+                            media=None
                             if 'no_products_left' in MESSAGES:
                                 s=MESSAGES['no_products_left'][0].replace('<br />', '').replace('<p>', '').replace('</p>', '')
                             else:
@@ -1026,6 +1027,7 @@ async def promotions_navigation(callback_query: CallbackQuery, state: FSMContext
             kp = await get_kp_path(str(promotion['id']))
             if not photo:
                 if promotion['name']=='Товары закончились':
+                    media=None
                     MESSAGES = await get_commands_list()
                     if 'no_products_left' in MESSAGES:
                         s=MESSAGES['no_products_left'][0].replace('<br />', '').replace('<p>', '').replace('</p>', '')
@@ -1379,6 +1381,7 @@ async def process_product_navigation(callback_query: CallbackQuery, state: FSMCo
                 current_data['product_message_id'] = a.message_id
             else:
                 if product['name']=='Товары закончились':
+                    media=None
                     MESSAGES = await get_commands_list()
                     if 'no_products_left' in MESSAGES:
                         s=MESSAGES['no_products_left'][0].replace('<br />', '').replace('<p>', '').replace('</p>', '')
@@ -1393,6 +1396,7 @@ async def process_product_navigation(callback_query: CallbackQuery, state: FSMCo
                     except:
                         filtered_lines = [s]
                 result = '\n'.join(filtered_lines)
+                print('MEDIA next:', media)
                 a = await bot.send_message(callback_query.from_user.id, text=result.replace('None', '')+promotion, reply_markup=get_product_kb(media, products, kp), parse_mode=types.ParseMode.HTML)
                 await bot.delete_message(chat_id=callback_query.message.chat.id, message_id=current_data['product_message_id'])
                 current_data['product_message_id'] = a.message_id
@@ -1435,6 +1439,7 @@ async def process_product_navigation(callback_query: CallbackQuery, state: FSMCo
             else:
                 if product['name']=='Товары закончились':
                     MESSAGES = await get_commands_list()
+                    media=None
                     if 'no_products_left' in MESSAGES:
                         s=MESSAGES['no_products_left'][0].replace('<br />', '').replace('<p>', '').replace('</p>', '')
                     else:
@@ -1521,6 +1526,7 @@ async def process_brand(callback_query: CallbackQuery, state: FSMContext):
                 else:
                     if product['name']=='Товары закончились':
                         MESSAGES = await get_commands_list()
+                        media=None
                         if 'no_products_left' in MESSAGES:
                             s=MESSAGES['no_products_left'][0].replace('<br />', '').replace('<p>', '').replace('</p>', '')
                         else:
@@ -1620,6 +1626,7 @@ async def callback_category(callback_query: CallbackQuery, state: FSMContext):
                         except Exception as e:
                             logging.info(e)
                             result = s
+                        print('MEDIA photo:', media)
                         a = await bot.send_photo(callback_query.from_user.id, photo, caption=result.replace('None', ' ')+promotion, reply_markup=get_product_kb(media, data_list, kp), parse_mode=types.ParseMode.HTML)
                         logging.info(f"Сработало bot.send_photo 1541")
                         data['product_message_id'] = a.message_id
@@ -1630,6 +1637,7 @@ async def callback_category(callback_query: CallbackQuery, state: FSMContext):
                         if product['name']=='Товары закончились':
                             print('CHEEEEEEEEEEECK()&(797979&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&)')
                             MESSAGES = await get_commands_list()
+                            media=None
                             if 'no_products_left' in MESSAGES:
                                 s=MESSAGES['no_products_left'][0].replace('<br />', '').replace('<p>', '').replace('</p>', '')
                             else:
@@ -1646,6 +1654,7 @@ async def callback_category(callback_query: CallbackQuery, state: FSMContext):
                         # s = f"<b>ID товара</b>: {product['id']}\n<b>Название</b>: {product['name']}\n<b>Описание</b>: {product['description']}\n<b>Марка</b>: {product['brand']}\n<b>Модель</b>: {product['product_model']}\n<b>Комплектация</b>: {product['equipment']}\n<b>Производитель</b>: {product['manufacturer']}\n<b>Год выпуска</b>: {product['year']}\n<b>Стоимость</b>: {price} {product['currency']}\n<b>Статус</b>: {product['status']}"
                         # filtered_lines = [line for line in s.split('\n') if line.split(':')[1] not in (' None', ' ')]
                         result = '\n'.join(filtered_lines)
+                        print('MEDIA true:', media)
                         a = await bot.send_message(callback_query.from_user.id, text=result.replace('None', ' ')+promotion, reply_markup=get_product_kb(media, data_list, kp), parse_mode=types.ParseMode.HTML)
                         data['product_message_id'] = a.message_id
                         data['product_name'] = product['name']

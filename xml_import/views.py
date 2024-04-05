@@ -21,11 +21,13 @@ def create_xml_import_settings(request):
 
 
 def make_xml_import(request):
-    from products.services import import_data_from_xml
+    #from products.services import import_data_from_xml
+    from products.tasks import import_data_from_xml
 
     try:
-        import_data_from_xml()
-        return JsonResponse({'message': 'Товары успешно импортированы'}, status=201)
+        # import_data_from_xml()
+        import_data_from_xml.delay()
+        return JsonResponse({'message': 'Поставили в очередь на импорт'}, status=201)
     except Exception as e:
         return JsonResponse({'message': f'Импортировать товары не удалось: {str(e)}'}, status=500)
 
