@@ -89,6 +89,7 @@ class ProductResource(resources.ModelResource):
                 self.statistics.save()
 
         if import_validation_errors:
+          print(import_validation_errors)
           return True
         return super().skip_row(instance, original, row, import_validation_errors=import_validation_errors)
 

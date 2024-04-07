@@ -113,14 +113,11 @@ DB_USER_NAME = os.getenv('DB_USER_NAME')
 DB_USER_PASSWORD = os.getenv('DB_USER_PASSWORD')
 DB_HOST = os.getenv('DB_HOST')
 
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': DB_NAME,
-        'USER': DB_USER_NAME,
-        'PASSWORD': DB_USER_PASSWORD,
-        'HOST': DB_HOST, # 'localhost',
-        'PORT': '5432',
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     }
 }
 
@@ -226,8 +223,8 @@ LOGGING = {
 
 
 #CELERY
-CELERY_BROKER_URL = 'redis://localhost:6379'  # URL для Redis брокера
-CELERY_RESULT_BACKEND = 'redis://localhost:6379'  # URL для Redis бэкенда результатов
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL') # URL для Redis брокера
+CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND')  # URL для Redis бэкенда результатов
 
 
 # Настройки для Celery Beat (периодические задачи)
@@ -237,7 +234,7 @@ CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": f"redis://127.0.0.1:6379/1",
+        "LOCATION": os.getenv('LOCATION'),
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
         },
