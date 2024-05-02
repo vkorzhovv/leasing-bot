@@ -59,7 +59,7 @@ def import_data_from_xml(*args):
         logging.info(f'data:{data}')
 
     # Импортируем данные из XML файла
-    dataset = resource.import_data(dataset=data, raise_errors=True)
+    dataset = resource.import_data(dataset=data, raise_errors=False)
     logging.info(f'dataset:{dataset}')
 
     # Возвращаем результат импорта

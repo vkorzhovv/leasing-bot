@@ -56,7 +56,6 @@ class ProductResource(resources.ModelResource):
         self.statistics = ImportStatistics.objects.first()
 
     def before_import_row(self, row, row_number=None, **kwargs):
-        print(row['char_id'])
         if 'media_url' in row:
             if row['media_url']!=None:
                 for url in row['media_url'].split(','):

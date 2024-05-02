@@ -21,7 +21,7 @@ def create_xml_import_settings(request):
 
 
 def make_xml_import(request):
-    #from products.services import import_data_from_xml
+    # from products.services import import_data_from_xml
     from products.tasks import import_data_from_xml
 
     try:

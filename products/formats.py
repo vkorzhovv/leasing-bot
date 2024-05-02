@@ -114,7 +114,10 @@ class XML(TextFormat):
             # Объединение URL медиа в одну строку через пробел
             combined_media_url = ','.join(media_urls)
             # Присваивание объединенной строки в качестве текста элемента <media_url>
-            ad.find('.//media_url').text = combined_media_url
+            
+            find_media_url = ad.find('.//media_url')
+            if find_media_url:
+                find_media_url.text = combined_media_url
 
         # Преобразование XML обратно в строку
         xml_string = ET.tostring(root, encoding='utf-8').decode('utf-8')
@@ -137,6 +140,13 @@ class XML(TextFormat):
         for i, value in enumerate(xml_df['category']):
             if not Category.objects.filter(id=value):  
                 xml_df.at[i, 'category'] = ''
+
+        for i, value in enumerate(xml_df['price']):
+            xml_df.at[i, 'price'] = str(value).replace(',', '.')
+
+        for i, value in enumerate(xml_df['manufacturer']):
+            print(str(value).lower().capitalize())
+            xml_df.at[i, 'manufacturer'] = str(value).lower().capitalize()
 
 
         # Удаляем столбцы <created_at>, <updated_at>, <year>
